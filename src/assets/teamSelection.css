@@ -1,0 +1,31 @@
+.team-list {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 50px;
+    flex-wrap: wrap;
+}
+
+.team-item {
+    font-size: 32px;
+    cursor: pointer;
+    transition: background-color 0.25s ease, transform 0.2s ease;
+    padding: 10px 20px;
+    border-radius: 10px;
+    color: white;
+    font-family: Girassol;
+    font-weight: 400;
+    font-style: Regular;
+}
+
+.team-item:hover {
+    text-decoration: underline;
+}
+
+.team-item.active {
+    background-image: url('/images/selected_team.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transform: scale(1.05);
+}

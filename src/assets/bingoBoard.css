@@ -1,0 +1,38 @@
+/* 🌊 Ocean Theme for Bingo Board */
+
+.bingo-board {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr); /* 10x10 grid */
+  gap: 4px;
+  background-color: #002b36; /* Deep ocean background */
+  padding: 12px;
+  border-radius: 12px;
+}
+
+/* Each cell is an equal square */
+.bingo-cell {
+  width: 50px;
+  aspect-ratio: 1 / 1;
+  background-color: #006994; /* Sea blue */
+  border: 1px solid #004e75;
+  border-radius: 6px;
+  margin: 2px;
+  transition: background-color 0.25s ease, transform 0.15s ease, box-shadow 0.25s ease;
+  cursor: pointer;
+}
+
+.bingo-cell:hover {
+  background-color: #0099cc; /* Lighter hover blue */
+  transform: scale(1.08);
+  box-shadow: 0 0 6px rgba(0, 153, 204, 0.6);
+}
+
+.bingo-cell.active {
+  background-color: #00bcd4; /* Seafoam for active cell */
+  box-shadow: 0 0 12px rgba(0, 188, 212, 0.8);
+  transform: scale(1.05);
+}
+
+.bingo-cell:active {
+  transform: scale(0.95);
+}

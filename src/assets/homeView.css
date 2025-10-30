@@ -1,0 +1,15 @@
+.home-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    padding-top: var(--header-height, 100px);
+    gap: 40px;
+}
+
+.home-logo {
+    width: 284px;
+    height: 131px;
+}
