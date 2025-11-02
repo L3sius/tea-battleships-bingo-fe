@@ -11,7 +11,7 @@
 import '../assets/teamSelection.css'
 import { ref } from 'vue'
 
-const teams = ['Tea Clan', 'Cuties Clan']
+const teams = ['Tea Clan', 'Chickens Clan']
 
 const selectedTeam = ref(teams[0])
 

@@ -13,3 +13,12 @@
     width: 284px;
     height: 131px;
 }
+
+.board-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 60px;
+    flex-wrap: wrap;
+    width: auto;
+}
