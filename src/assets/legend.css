@@ -1,0 +1,179 @@
+.legend-button {
+    position: fixed;
+    right: 12px;
+    bottom: 12px;
+    z-index: 100;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(18, 13, 9, 0.9);
+    border: 2px solid #e8b95f;
+    color: #e8b95f;
+    font-family: 'Girassol';
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.legend-button:hover {
+    background: rgba(232, 185, 95, 0.2);
+}
+
+.legend-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.legend-modal {
+    width: min(480px, 90vw);
+    max-height: 80vh;
+    overflow-y: auto;
+    background: rgba(18, 13, 9, 0.97);
+    border: 3px solid #6b4f34;
+    border-radius: 8px;
+    padding: 20px 24px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.legend-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.legend-title {
+    font-family: 'Girassol';
+    font-size: 26px;
+    color: #e8b95f;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.legend-close {
+    background: none;
+    border: none;
+    color: #e5e5e5;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.legend-close:hover {
+    color: #ffd684;
+}
+
+.legend-items {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: 'Inter';
+    font-size: 14px;
+    color: #e5e5e5;
+}
+
+.legend-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #001f2d;
+    background-image: url('/images/water_background.png');
+    background-size: cover;
+    border-radius: 4px;
+    position: relative;
+}
+
+.legend-difficulty {
+    font-family: 'Inter';
+    font-weight: 700;
+    font-size: 13px;
+    color: #e0f7fa;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 3px 0 0 5px;
+}
+
+.legend-fire {
+    color: #ffd684;
+    font-size: 20px;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+.legend-hit {
+    color: #ff3b3b;
+    font-size: 20px;
+    font-weight: 900;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+}
+
+.legend-wreck {
+    color: #ffb3b3;
+    font-weight: 700;
+    font-size: 13px;
+    background: linear-gradient(180deg, #3a3a3a 0%, #1c1c1c 60%, #0a0a0a 100%);
+    border: 2px solid #7a0000;
+    border-radius: 999px;
+}
+
+.legend-unknown {
+    font-family: 'Girassol';
+    font-size: 20px;
+    color: #7a6650;
+    background: linear-gradient(180deg, #2a2018 0%, #17110b 100%);
+    border: 2px solid #6b4f34;
+}
+
+.legend-progress-track {
+    width: 26px;
+    height: 5px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.legend-progress-fill {
+    display: block;
+    width: 60%;
+    height: 100%;
+    background: #e0a83c;
+}
+
+.legend-miss-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.75);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+}
+
+.legend-hp-track {
+    width: 30px;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #3a2a17;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.legend-hp-fill {
+    display: block;
+    width: 55%;
+    height: 100%;
+    background: #e0a83c;
+}

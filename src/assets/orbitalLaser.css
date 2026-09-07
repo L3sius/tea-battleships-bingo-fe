@@ -1,0 +1,199 @@
+.laser-reticle-spin {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 46px;
+    height: 46px;
+    margin-left: -23px;
+    margin-top: -23px;
+    z-index: 240;
+    pointer-events: none;
+    animation: laser-reticle-spin 1100ms linear infinite;
+}
+
+.laser-reticle-spin.fading {
+    transition: opacity 150ms ease-out;
+    opacity: 0;
+}
+
+.laser-reticle {
+    position: absolute;
+    inset: 0;
+    border: 3px dashed rgba(255, 70, 60, 0.9);
+    border-radius: 50%;
+    box-shadow: 0 0 14px rgba(255, 60, 50, 0.7);
+    animation: laser-reticle-pulse 550ms ease-in-out infinite;
+}
+
+.laser-reticle::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    margin: -3px;
+    background: rgba(255, 80, 60, 0.95);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(255, 60, 50, 0.8);
+}
+
+@keyframes laser-reticle-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes laser-reticle-pulse {
+    0%,
+    100% {
+        transform: scale(0.85);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.15);
+        opacity: 1;
+    }
+}
+
+.laser-beam-glow,
+.laser-beam-core {
+    position: fixed;
+    top: 0;
+    transform-origin: top center;
+    pointer-events: none;
+    animation: laser-beam-flash 3240ms ease-out forwards;
+}
+
+.laser-beam-glow {
+    width: 34px;
+    margin-left: -17px;
+    z-index: 245;
+    background: linear-gradient(180deg, rgba(90, 220, 255, 0) 0%, rgba(90, 220, 255, 0.55) 40%, rgba(140, 230, 255, 0.85) 100%);
+    filter: blur(6px);
+}
+
+.laser-beam-core {
+    width: 7px;
+    margin-left: -3.5px;
+    z-index: 246;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #eafcff 35%, #ffffff 100%);
+    box-shadow: 0 0 18px 4px rgba(140, 230, 255, 0.9), 0 0 40px 10px rgba(90, 200, 255, 0.5);
+}
+
+@keyframes laser-beam-flash {
+    0% {
+        opacity: 0;
+        transform: scaleY(0.85) scaleX(1);
+    }
+    6% {
+        opacity: 1;
+        transform: scaleY(1) scaleX(1);
+    }
+    45% {
+        opacity: 0.82;
+        transform: scaleY(1) scaleX(1.2);
+    }
+    55% {
+        opacity: 1;
+        transform: scaleY(1) scaleX(1.35);
+    }
+    70% {
+        opacity: 0.88;
+        transform: scaleY(1) scaleX(1.55);
+    }
+    80% {
+        opacity: 1;
+        transform: scaleY(1) scaleX(1.75);
+    }
+    88% {
+        opacity: 1;
+        transform: scaleY(1) scaleX(1.9);
+    }
+    100% {
+        opacity: 0;
+        transform: scaleY(1.02) scaleX(2.1);
+    }
+}
+
+.laser-burst {
+    position: fixed;
+    z-index: 260;
+    pointer-events: none;
+}
+
+.burst-flash {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 150px;
+    height: 150px;
+    margin-left: -75px;
+    margin-top: -75px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffffff 0%, #eafcff 30%, #7fd7ff 55%, transparent 75%);
+    animation: laser-burst-pop 0.45s ease-out forwards;
+}
+
+.burst-ring {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 40px;
+    height: 40px;
+    margin-left: -20px;
+    margin-top: -20px;
+    border-radius: 50%;
+    border: 6px solid rgba(150, 230, 255, 0.9);
+    animation: laser-ring-expand 0.5s ease-out forwards;
+}
+
+.laser-burst.hit .burst-flash,
+.laser-burst.sunk .burst-flash {
+    background: radial-gradient(circle, #ffffff 0%, #ffe39c 25%, #ff8c3d 55%, transparent 75%);
+}
+
+.laser-burst.sunk .burst-ring {
+    border-color: rgba(255, 140, 60, 0.9);
+}
+
+.laser-burst.miss .burst-flash {
+    background: radial-gradient(circle, #ffffff 0%, #cfeeff 30%, #5cb8ff 55%, transparent 75%);
+}
+
+.laser-burst.miss .burst-ring {
+    border-color: rgba(120, 200, 255, 0.85);
+}
+
+.laser-burst.fading .burst-flash,
+.laser-burst.fading .burst-ring {
+    transition: opacity 0.3s ease;
+    opacity: 0 !important;
+}
+
+@keyframes laser-burst-pop {
+    0% {
+        transform: scale(0.2);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.6);
+        opacity: 0;
+    }
+}
+
+@keyframes laser-ring-expand {
+    0% {
+        transform: scale(0.5);
+        opacity: 0.9;
+        border-width: 8px;
+    }
+    100% {
+        transform: scale(6);
+        opacity: 0;
+        border-width: 1px;
+    }
+}

@@ -1,0 +1,150 @@
+.cannon-rig {
+    position: fixed;
+    left: 40px;
+    bottom: 40px;
+    width: 240px;
+    height: 240px;
+    z-index: 300;
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0.25);
+    transform-origin: 18% 82%;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.cannon-rig.appear {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 0.7s ease-out, transform 0.7s cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+.cannon-rig.fade-out {
+    opacity: 0;
+    transform: scale(0.85);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.cannon-rotator {
+    position: absolute;
+    inset: 0;
+    transform-origin: 50% 50%;
+}
+
+.cannon-sprite {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.6));
+}
+
+.muzzle-flash {
+    position: absolute;
+    left: 219px;
+    top: 61px;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff4c2 0%, #ffb340 45%, transparent 72%);
+    animation: muzzle-pop 0.14s ease-out forwards;
+}
+
+@keyframes muzzle-pop {
+    0% {
+        opacity: 1;
+        transform: scale(0.3);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.8);
+    }
+}
+
+.cannon-projectile {
+    position: fixed;
+    width: 40px;
+    height: 40px;
+    margin-left: -20px;
+    margin-top: -20px;
+    z-index: 250;
+    pointer-events: none;
+}
+
+.cannonball-big {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #8a8a8a, #141414 70%);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.7);
+}
+
+.impact-boom {
+    position: absolute;
+    inset: 0;
+}
+
+.boom-flash {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 170px;
+    height: 170px;
+    margin: -85px;
+    border-radius: 50%;
+    animation: boom-flash-pop 0.65s ease-out forwards;
+}
+
+.boom-ring {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 50px;
+    height: 50px;
+    margin: -25px;
+    border-radius: 50%;
+    border: 8px solid rgba(255, 190, 90, 0.9);
+    animation: boom-ring-expand 0.65s ease-out forwards;
+}
+
+.impact-boom.hit .boom-flash,
+.impact-boom.sunk .boom-flash {
+    background: radial-gradient(circle, #ffe39c 0%, #ffcf5c 30%, #ff5c33 55%, transparent 75%);
+}
+
+.impact-boom.sunk .boom-ring {
+    border-color: rgba(255, 90, 50, 0.9);
+}
+
+.impact-boom.miss .boom-flash {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(150, 200, 255, 0.5) 45%, transparent 75%);
+}
+
+.impact-boom.miss .boom-ring {
+    border-color: rgba(180, 220, 255, 0.85);
+}
+
+@keyframes boom-flash-pop {
+    0% {
+        transform: scale(0.2);
+        opacity: 1;
+    }
+    45% {
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.7);
+        opacity: 0;
+    }
+}
+
+@keyframes boom-ring-expand {
+    0% {
+        transform: scale(0.6);
+        opacity: 0.9;
+        border-width: 10px;
+    }
+    100% {
+        transform: scale(5);
+        opacity: 0;
+        border-width: 1px;
+    }
+}

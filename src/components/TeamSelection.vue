@@ -1,21 +1,22 @@
 <template>
-    <div class="team-list">
-        <span v-for="(team, index) in teams" :key="team" class="team-item" :class="{ active: selectedTeam === team }"
-            @click="selectTeam(team)">
-            {{ team }}
-        </span>
+    <div class="team-select">
+        <button v-for="team in teams" :key="team.id" class="team-select-item"
+            :class="{ active: modelValue === team.id }" :style="teamStyle(team.id)"
+            @click="$emit('update:modelValue', team.id)">
+            {{ team.name }}
+        </button>
     </div>
 </template>
 
 <script setup lang="ts">
-import '../assets/teamSelection.css'
-import { ref } from 'vue'
+import '@/assets/teamSelection.css'
+import type { Team } from '@/api/types'
+import { teamColor } from '@/utils/teamColors'
 
-const teams = ['Tea Clan', 'Chickens Clan']
+const props = defineProps<{ teams: Team[]; modelValue: number | null }>()
+defineEmits<{ 'update:modelValue': [value: number] }>()
 
-const selectedTeam = ref(teams[0])
-
-function selectTeam(team: string) {
-    selectedTeam.value = team
+function teamStyle(teamId: number) {
+    return { '--team-color': teamColor(props.teams, teamId) }
 }
 </script>

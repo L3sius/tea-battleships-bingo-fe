@@ -1,0 +1,361 @@
+.storm-clouds {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    z-index: 235;
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0.7);
+    transform-origin: top center;
+    animation: storm-clouds-fade-in 1500ms ease-out forwards;
+}
+
+.storm-clouds.fading {
+    animation: storm-clouds-fade-out 350ms ease-in forwards;
+}
+
+@keyframes storm-clouds-fade-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.7);
+    }
+    70% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes storm-clouds-fade-out {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+.storm-cloud-puff {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #4a4a54 0%, #26262e 70%, transparent 100%);
+    filter: blur(3px);
+}
+
+.storm-cloud-puff.p1 {
+    left: -150px;
+    top: -20px;
+    width: 140px;
+    height: 90px;
+}
+
+.storm-cloud-puff.p2 {
+    left: -70px;
+    top: -40px;
+    width: 170px;
+    height: 110px;
+}
+
+.storm-cloud-puff.p3 {
+    left: 20px;
+    top: -30px;
+    width: 160px;
+    height: 100px;
+}
+
+.storm-cloud-puff.p4 {
+    left: 100px;
+    top: -15px;
+    width: 130px;
+    height: 85px;
+}
+
+.storm-cloud-puff.p5 {
+    left: -30px;
+    top: 10px;
+    width: 190px;
+    height: 70px;
+}
+
+.storm-charge-glow {
+    position: absolute;
+    left: 0;
+    top: 40px;
+    width: 60px;
+    height: 60px;
+    margin-left: -30px;
+    margin-top: -30px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #eaf2ff 0%, #9cc4ff 40%, transparent 75%);
+    animation: storm-charge-flicker 300ms ease-in-out;
+}
+
+@keyframes storm-charge-flicker {
+    0%,
+    100% {
+        opacity: 0;
+    }
+    30% {
+        opacity: 0.9;
+    }
+    55% {
+        opacity: 0.2;
+    }
+    75% {
+        opacity: 0.85;
+    }
+}
+
+.storm-rain {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 200px;
+    margin-left: -100px;
+    z-index: 236;
+    pointer-events: none;
+    opacity: 0;
+    animation: storm-rain-fade-in 300ms ease-out forwards;
+    /* Fades the streaks into nothing near the ground instead of cutting off
+       in a hard rectangle — reads as mist forming rather than a box edge. */
+    mask-image: linear-gradient(to bottom, black 0%, black 65%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 65%, transparent 100%);
+}
+
+.storm-rain.fading {
+    animation: storm-rain-fade-out 300ms ease-in forwards;
+}
+
+/* Individual streak columns rather than one sliding sheet — each at its own
+   X position, speed, and phase, so it reads as scattered rain instead of a
+   uniform rectangle moving in lockstep. */
+.storm-rain-column {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 3px;
+    transform: rotate(9deg);
+    background: repeating-linear-gradient(
+        180deg,
+        transparent 0px,
+        transparent 10px,
+        rgba(210, 225, 245, 0.55) 11px,
+        rgba(210, 225, 245, 0.55) 26px,
+        transparent 27px
+    );
+    background-size: 100% 60px;
+    background-repeat: repeat-y;
+    animation: storm-rain-col-fall 520ms linear infinite;
+}
+
+.storm-rain-column.c1 {
+    left: 4px;
+    animation-duration: 480ms;
+    animation-delay: -80ms;
+}
+
+.storm-rain-column.c2 {
+    left: 28px;
+    animation-duration: 560ms;
+    animation-delay: -260ms;
+}
+
+.storm-rain-column.c3 {
+    left: 54px;
+    animation-duration: 500ms;
+    animation-delay: -10ms;
+}
+
+.storm-rain-column.c4 {
+    left: 80px;
+    animation-duration: 610ms;
+    animation-delay: -390ms;
+}
+
+.storm-rain-column.c5 {
+    left: 104px;
+    animation-duration: 470ms;
+    animation-delay: -150ms;
+}
+
+.storm-rain-column.c6 {
+    left: 128px;
+    animation-duration: 540ms;
+    animation-delay: -60ms;
+}
+
+.storm-rain-column.c7 {
+    left: 154px;
+    animation-duration: 590ms;
+    animation-delay: -320ms;
+}
+
+.storm-rain-column.c8 {
+    left: 178px;
+    animation-duration: 520ms;
+    animation-delay: -430ms;
+}
+
+@keyframes storm-rain-col-fall {
+    from {
+        background-position-y: 0;
+    }
+    to {
+        background-position-y: 60px;
+    }
+}
+
+@keyframes storm-rain-fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 0.9;
+    }
+}
+
+@keyframes storm-rain-fade-out {
+    from {
+        opacity: 0.9;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+.storm-bolt-svg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 246;
+    pointer-events: none;
+}
+
+.storm-bolt-glow,
+.storm-bolt-core {
+    fill: none;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    animation: storm-bolt-flicker 1200ms steps(1, end) forwards;
+}
+
+.storm-bolt-glow {
+    stroke: #bfe2ff;
+    stroke-width: 10;
+    opacity: 0.5;
+    filter: blur(4px);
+}
+
+.storm-bolt-core {
+    stroke: #ffffff;
+    stroke-width: 3;
+}
+
+@keyframes storm-bolt-flicker {
+    0% {
+        opacity: 1;
+    }
+    6% {
+        opacity: 0.2;
+    }
+    9% {
+        opacity: 1;
+    }
+    12% {
+        opacity: 0.3;
+    }
+    17% {
+        opacity: 0.85;
+        animation-timing-function: linear;
+    }
+    88% {
+        opacity: 0.6;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+.storm-burst {
+    position: fixed;
+    z-index: 260;
+    pointer-events: none;
+}
+
+.storm-burst .burst-flash {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 160px;
+    height: 160px;
+    margin-left: -80px;
+    margin-top: -80px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffffff 0%, #cfeeff 30%, #6fb8ff 55%, transparent 75%);
+    animation: storm-burst-pop 0.45s ease-out forwards;
+}
+
+.storm-burst .burst-ring {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 44px;
+    height: 44px;
+    margin-left: -22px;
+    margin-top: -22px;
+    border-radius: 50%;
+    border: 7px solid rgba(150, 210, 255, 0.9);
+    animation: storm-ring-expand 0.5s ease-out forwards;
+}
+
+.storm-burst.hit .burst-flash,
+.storm-burst.sunk .burst-flash {
+    background: radial-gradient(circle, #ffffff 0%, #ffe39c 25%, #ff8c3d 55%, transparent 75%);
+}
+
+.storm-burst.sunk .burst-ring {
+    border-color: rgba(255, 140, 60, 0.9);
+}
+
+.storm-burst.miss .burst-flash {
+    background: radial-gradient(circle, #ffffff 0%, #cfeeff 30%, #5cb8ff 55%, transparent 75%);
+}
+
+.storm-burst.miss .burst-ring {
+    border-color: rgba(120, 200, 255, 0.85);
+}
+
+.storm-burst.fading .burst-flash,
+.storm-burst.fading .burst-ring {
+    transition: opacity 0.3s ease;
+    opacity: 0 !important;
+}
+
+@keyframes storm-burst-pop {
+    0% {
+        transform: scale(0.2);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.6);
+        opacity: 0;
+    }
+}
+
+@keyframes storm-ring-expand {
+    0% {
+        transform: scale(0.5);
+        opacity: 0.9;
+        border-width: 9px;
+    }
+    100% {
+        transform: scale(6);
+        opacity: 0;
+        border-width: 1px;
+    }
+}

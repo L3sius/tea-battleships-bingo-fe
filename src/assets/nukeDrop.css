@@ -1,0 +1,214 @@
+.nuke-shadow {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 90px;
+    height: 34px;
+    margin-left: -45px;
+    margin-top: -17px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(0, 0, 0, 0.6) 0%, transparent 72%);
+    z-index: 240;
+    pointer-events: none;
+    transform: scale(0.1);
+    opacity: 0;
+    animation: nuke-shadow-grow 1300ms ease-in 2100ms forwards;
+}
+
+@keyframes nuke-shadow-grow {
+    0% {
+        transform: scale(0.1);
+        opacity: 0;
+    }
+    70% {
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+}
+
+.nuke-bomb {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 150px;
+    height: 225px;
+    margin-left: -75px;
+    margin-top: -113px;
+    z-index: 250;
+    pointer-events: none;
+}
+
+.nuke-sprite {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6));
+}
+
+.nuke-countdown {
+    position: fixed;
+    left: 50%;
+    top: 38%;
+    transform: translate(-50%, -50%);
+    z-index: 400;
+    font-family: 'Girassol';
+    font-size: 180px;
+    font-weight: 900;
+    color: #ff4d2e;
+    text-shadow: 0 0 40px rgba(255, 80, 30, 0.9), 0 0 80px rgba(255, 40, 20, 0.5), 0 4px 10px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+    animation: nuke-countdown-pop 450ms ease-out;
+}
+
+@keyframes nuke-countdown-pop {
+    0% {
+        transform: translate(-50%, -50%) scale(1.8);
+        opacity: 0;
+    }
+    30% {
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+.nuke-boom {
+    position: fixed;
+    z-index: 260;
+    pointer-events: none;
+}
+
+.boom-flash-big {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 320px;
+    height: 320px;
+    margin-left: -160px;
+    margin-top: -160px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffffff 0%, #ffe9a8 35%, #ff9c4d 60%, transparent 75%);
+    animation: nuke-flash-pop 0.5s ease-out forwards;
+}
+
+.boom-shock-big {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80px;
+    height: 80px;
+    margin-left: -40px;
+    margin-top: -40px;
+    border-radius: 50%;
+    border: 12px solid rgba(255, 200, 90, 0.85);
+    animation: nuke-shock-expand 0.9s ease-out forwards;
+}
+
+.mushroom-stem {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 46px;
+    height: 160px;
+    margin-left: -23px;
+    margin-top: -160px;
+    transform-origin: bottom center;
+    background: linear-gradient(0deg, #5a4632 0%, #8a7355 40%, #d99a4e 70%, #ff8c3d 100%);
+    border-radius: 40% 40% 10% 10%;
+    opacity: 0;
+    animation: nuke-stem-rise 0.9s ease-out forwards;
+}
+
+.mushroom-cap {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 240px;
+    height: 150px;
+    margin-left: -120px;
+    margin-top: -290px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, #ffb35c 0%, #c47a3a 40%, #5a3d24 72%, transparent 88%);
+    opacity: 0;
+    transform: scale(0.3);
+    animation: nuke-cap-bloom 1s ease-out 0.25s forwards;
+}
+
+.nuke-boom.fading .mushroom-stem,
+.nuke-boom.fading .mushroom-cap {
+    transition: opacity 0.3s ease;
+    opacity: 0 !important;
+}
+
+.nuke-boom.miss .boom-flash-big {
+    background: radial-gradient(circle, #ffffff 0%, #cfe6ff 40%, #8fb8e8 65%, transparent 78%);
+}
+
+.nuke-boom.miss .boom-shock-big {
+    border-color: rgba(180, 220, 255, 0.85);
+}
+
+.nuke-boom.miss .mushroom-stem {
+    background: linear-gradient(0deg, #3a4652 0%, #5f7385 40%, #9db6c9 70%, #d8ecff 100%);
+}
+
+.nuke-boom.miss .mushroom-cap {
+    background: radial-gradient(circle at 50% 40%, #d8ecff 0%, #7fa3c4 40%, #2c3a45 72%, transparent 88%);
+}
+
+@keyframes nuke-flash-pop {
+    0% {
+        transform: scale(0.15);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+@keyframes nuke-shock-expand {
+    0% {
+        transform: scale(0.4);
+        opacity: 0.9;
+        border-width: 14px;
+    }
+    100% {
+        transform: scale(7);
+        opacity: 0;
+        border-width: 1px;
+    }
+}
+
+@keyframes nuke-stem-rise {
+    0% {
+        transform: scaleY(0);
+        opacity: 0;
+    }
+    30% {
+        opacity: 1;
+    }
+    100% {
+        transform: scaleY(1);
+        opacity: 0.9;
+    }
+}
+
+@keyframes nuke-cap-bloom {
+    0% {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+    40% {
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 0.85;
+    }
+}
