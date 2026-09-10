@@ -84,12 +84,16 @@ function summaryKind(s: string): FeedKind {
 function parseSummary(s: string): FeedSeg[] {
     let m = s.match(/^looted (.+) from (.+)$/)
     if (m) {
-        const items: LootLine[] = g(m, 1)
-            .split(', ')
-            .map((it) => {
-                const q = it.match(/^(.+?) x(\d+)$/)
-                return q ? { name: g(q, 1), qty: Number(g(q, 2)) } : { name: it, qty: 1 }
-            })
+        // the backend can list the same drop more than once ("Bird nest, Bird
+        // nest, Bird nest x2") — fold those into one row with a summed quantity.
+        const byName = new Map<string, number>()
+        for (const it of g(m, 1).split(', ')) {
+            const q = it.match(/^(.+?) x(\d+)$/)
+            const name = q ? g(q, 1) : it
+            const qty = q ? Number(g(q, 2)) : 1
+            byName.set(name, (byName.get(name) ?? 0) + qty)
+        }
+        const items: LootLine[] = [...byName].map(([name, qty]) => ({ name, qty }))
         return [txt('got '), loot(items), txt(' from '), bss(g(m, 2))]
     }
     m = s.match(/^killed (.+?) \(KC (\d+)(?:, ([\d.]+)s)?\)$/)
