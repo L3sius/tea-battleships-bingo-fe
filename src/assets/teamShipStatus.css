@@ -139,48 +139,146 @@
     color: var(--color-muted);
 }
 
-.ship-status-ships {
+.ship-status-fleet-head {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 9px 14px;
-}
-
-.ship-status-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 4px 8px;
+    align-items: baseline;
     justify-content: space-between;
+    gap: 8px;
+    padding: 9px 14px 0;
 }
 
-.ship-name {
-    font-size: 18px;
+.ship-status-fleet-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-muted);
+}
+
+.ship-status-fleet-count {
+    font-family: var(--font-mono);
+    font-size: 13px;
     color: var(--color-fg-dim);
 }
 
-.ship-status-row.sunk .ship-name {
+/* Exactly three per row at any panel width. auto-fill was tempting but on a
+   wide panel it packs in nine tiny columns and the hulls become unreadable. */
+.ship-status-fleet {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px 8px;
+    padding: 8px 14px 14px;
+}
+
+.fleet-hull {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+}
+
+.fleet-hull-frame {
+    position: relative;
+    width: 100%;
+    height: 56px;
+    border-radius: 3px;
+    /* size container so the rotated art can be measured against both axes */
+    container-type: size;
+}
+
+/* Hull art is authored bow-up at aspect 1 : length, and the tile lays it on its
+   side. These two min() calls are `object-fit: contain` done manually, because
+   contain is computed before the rotation and would fit the wrong axis. */
+.fleet-hull-art,
+.fleet-hull-mask {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: min(calc(100cqw / var(--hull-len)), 100cqh);
+    height: min(100cqw, calc(100cqh * var(--hull-len)));
+    transform: rotate(90deg);
+}
+
+/* A 1-length hull has no orientation and its art is already square, so turning
+   it would just tip the ship onto its side. The sizing above already resolves
+   to a square at that length, so only the rotation has to go. */
+.fleet-hull.upright .fleet-hull-art,
+.fleet-hull.upright .fleet-hull-mask {
+    transform: none;
+}
+
+.fleet-hull-art {
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+
+/* Afloat: the shape only, filled with the team colour. */
+.fleet-hull-mask {
+    background: var(--team-color, var(--color-muted));
+    opacity: 0.5;
+    -webkit-mask-image: var(--hull-mask);
+    mask-image: var(--hull-mask);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+
+.ship-status-card:hover .fleet-hull-mask,
+.ship-status-card.active .fleet-hull-mask {
+    opacity: 0.68;
+}
+
+/* Sunk hulls are revealed, in a wreck frame so the swap reads as a loss rather
+   than just "this one is more detailed". The frame hugs the hull's own bounds
+   (the rotated art's width/height, swapped) instead of the whole grid track —
+   otherwise a short hull floats in a wide empty box. */
+.fleet-hull.sunk .fleet-hull-frame::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: min(100cqw, calc(100cqh * var(--hull-len)));
+    height: min(calc(100cqw / var(--hull-len)), 100cqh);
+    border-radius: 3px;
+    background: rgba(139, 0, 0, 0.22);
+    box-shadow: inset 0 0 0 1px rgba(204, 34, 34, 0.55);
+}
+
+.fleet-hull-name {
+    max-width: 100%;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.2;
     color: var(--color-muted);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fleet-hull.sunk .fleet-hull-name {
+    color: #ff8080;
     text-decoration: line-through;
 }
 
-.ship-state-badge {
+/* No art for this hull — fall back to a bar showing its length. */
+.fleet-hull-fallback {
+    position: absolute;
+    inset: 25% 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    background: rgba(69, 96, 128, 0.3);
     font-family: var(--font-mono);
-    font-size: 14px;
+    font-size: 10px;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: rgba(74, 154, 74, 0.14);
-    border: 1px solid rgba(74, 154, 74, 0.35);
-    color: var(--color-progress);
-}
-
-.ship-state-badge.sunk {
-    background: rgba(139, 0, 0, 0.16);
-    border-color: rgba(139, 0, 0, 0.4);
-    color: #ff8080;
+    color: var(--color-muted);
 }
 
 /* Blinks on the attacking team's card while a shot is counting down, so people

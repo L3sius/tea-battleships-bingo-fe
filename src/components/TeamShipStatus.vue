@@ -33,13 +33,28 @@
                 </div>
             </div>
 
-            <div class="ship-status-ships">
-                <div v-for="ship in team.ships" :key="ship.key" class="ship-status-row" :class="{ sunk: ship.sunk }">
-                    <span class="ship-name">{{ ship.displayName }}</span>
-                    <span class="ship-state-badge" :class="{ sunk: ship.sunk }">
-                        {{ ship.sunk ? 'Sunk' : 'Afloat' }}
+            <div class="ship-status-fleet-head">
+                <span class="ship-status-fleet-label">Fleet</span>
+                <span class="ship-status-fleet-count">{{ afloatCount(team) }} / {{ team.ships.length }} afloat</span>
+            </div>
+
+            <!-- Afloat hulls are silhouettes; sinking one reveals its art — still
+                 just the afloat/sunk bit, no damage detail. Each hull keeps its true
+                 aspect inside a fixed tile, so a long ship reads as a thin sliver
+                 and a short one as a chunky block. -->
+            <div class="ship-status-fleet">
+                <span v-for="ship in team.ships" :key="ship.key" class="fleet-hull"
+                    :class="{ sunk: ship.sunk, upright: ship.length === 1 }" :style="{ '--hull-len': ship.length }"
+                    :title="`${ship.displayName} (${ship.length}) — ${ship.sunk ? 'Sunk' : 'Afloat'}`">
+                    <span class="fleet-hull-frame">
+                        <img v-if="ship.sunk && ship.image" class="fleet-hull-art" :src="hullSrc(ship.image)"
+                            :alt="`${ship.displayName}, sunk`" />
+                        <span v-else-if="ship.image" class="fleet-hull-mask"
+                            :style="{ '--hull-mask': `url('${hullSrc(ship.image)}')` }" />
+                        <span v-else class="fleet-hull-fallback">{{ ship.length }}</span>
                     </span>
-                </div>
+                    <span class="fleet-hull-name">{{ ship.displayName }}</span>
+                </span>
             </div>
         </button>
     </div>
@@ -69,6 +84,14 @@ const attackingTeams = computed(() => new Set((props.pendingAttacks ?? []).map((
 // Clicking a fleet card is how you pick which board to view now (the old
 // standalone TeamSelection bar was folded into this panel to save space).
 const emit = defineEmits<{ 'update:selectedTeamId': [teamId: number] }>()
+
+function hullSrc(image: string) {
+    return /^(https?:)?\//.test(image) ? image : `/images/ships/${image}`
+}
+
+function afloatCount(team: ShipStatusTeam) {
+    return team.ships.filter((s) => !s.sunk).length
+}
 
 // Ship status intentionally only ever shows afloat/sunk, never hit counts or
 // remaining HP — showing exact damage would spoil how close a ship is to
