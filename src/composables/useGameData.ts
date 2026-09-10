@@ -58,6 +58,25 @@ function handleGameEvent(evt: GameStreamEvent) {
     }
 }
 
+// The /getActionStream frames don't quite match the rest of the API: the
+// backend's BingoAction is serialized snake_case (`is_success_action`) and its
+// `timestamp` is a Unix seconds integer, not a date string. Normalize both here
+// so the rest of the app sees a clean ActionMessage regardless.
+function toActionMessage(raw: Record<string, unknown>): ActionMessage {
+    const ts = raw.timestamp
+    let timestamp = ''
+    if (typeof ts === 'number') {
+        timestamp = new Date(ts < 1e12 ? ts * 1000 : ts).toISOString()
+    } else if (typeof ts === 'string') {
+        timestamp = ts
+    }
+    return {
+        message: typeof raw.message === 'string' ? raw.message : '',
+        isSuccessAction: (raw.isSuccessAction ?? raw.is_success_action ?? true) === true,
+        timestamp,
+    }
+}
+
 function pushLiveMessage(message: ActionMessage, atStart: boolean) {
     if (atStart) {
         liveMessages.value.unshift(message)
@@ -80,11 +99,11 @@ function start() {
     refreshShots().catch(reportError)
 
     api.connectActionStream({
-        history: (ev) => pushLiveMessage(JSON.parse(ev.data) as ActionMessage, false),
+        history: (ev) => pushLiveMessage(toActionMessage(JSON.parse(ev.data)), false),
         history_complete: () => {
             connected.value = true
         },
-        action: (ev) => pushLiveMessage(JSON.parse(ev.data) as ActionMessage, true),
+        action: (ev) => pushLiveMessage(toActionMessage(JSON.parse(ev.data)), true),
     })
 
     api.connectGameStream({
