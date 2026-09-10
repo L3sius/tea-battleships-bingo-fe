@@ -23,6 +23,7 @@
         </nav>
 
         <div class="top-nav-aside">
+            <DinkSetupModal />
             <SoundControl />
         </div>
     </header>
@@ -32,6 +33,7 @@
 import '@/assets/topNav.css'
 import { RouterLink } from 'vue-router'
 import SoundControl from '@/components/SoundControl.vue'
+import DinkSetupModal from '@/components/DinkSetupModal.vue'
 
 defineProps<{ tasksCompleted: number; attacksMade: number }>()
 
