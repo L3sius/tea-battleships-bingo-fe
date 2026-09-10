@@ -77,12 +77,11 @@ function toActionMessage(raw: Record<string, unknown>): ActionMessage {
     }
 }
 
-function pushLiveMessage(message: ActionMessage, atStart: boolean) {
-    if (atStart) {
-        liveMessages.value.unshift(message)
-    } else {
-        liveMessages.value.push(message)
-    }
+// Always prepend, for both the history backlog (streamed oldest-first) and live
+// frames — so liveMessages stays strictly newest-first and same-second events
+// keep their arrival order. The stale tail is trimmed off the end.
+function pushLiveMessage(message: ActionMessage) {
+    liveMessages.value.unshift(message)
     if (liveMessages.value.length > MAX_LIVE_MESSAGES) {
         liveMessages.value.length = MAX_LIVE_MESSAGES
     }
@@ -99,11 +98,11 @@ function start() {
     refreshShots().catch(reportError)
 
     api.connectActionStream({
-        history: (ev) => pushLiveMessage(toActionMessage(JSON.parse(ev.data)), false),
+        history: (ev) => pushLiveMessage(toActionMessage(JSON.parse(ev.data))),
         history_complete: () => {
             connected.value = true
         },
-        action: (ev) => pushLiveMessage(toActionMessage(JSON.parse(ev.data)), true),
+        action: (ev) => pushLiveMessage(toActionMessage(JSON.parse(ev.data))),
     })
 
     api.connectGameStream({

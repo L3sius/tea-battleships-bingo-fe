@@ -67,21 +67,6 @@
                 <span>{{ p.bonusCracked || '—' }}</span>
             </div>
         </div>
-
-        <h2 class="stats-subtitle">Awards</h2>
-        <div class="stats-awards">
-            <div v-for="a in awards" :key="a.title" class="stats-award">
-                <span class="stats-award-icon">{{ a.icon }}</span>
-                <div class="stats-award-body">
-                    <span class="stats-award-name">{{ a.title }}</span>
-                    <span class="stats-award-sub">{{ a.subtitle }}</span>
-                    <span v-if="a.winner" class="stats-award-winner">
-                        {{ a.winner }} <span class="stats-award-detail">· {{ a.detail }}</span>
-                    </span>
-                    <span v-else class="stats-award-winner stats-award-none">Unclaimed</span>
-                </div>
-            </div>
-        </div>
     </div>
 </template>
 
@@ -142,7 +127,6 @@ interface PlayerStat {
     tasksDone: number
     topCategory: string | null
     bonusCracked: number
-    firstCompletedAt: string | null
 }
 
 // Only task/bonus completions carry a real player name; shots are all fired as
@@ -160,10 +144,6 @@ const playerStats = computed<PlayerStat[]>(() => {
                 if (c) catCounts.set(c, (catCounts.get(c) ?? 0) + 1)
             }
             const topCategory = [...catCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
-            const completedAts = mine
-                .map((t) => t.completedAt)
-                .filter((x): x is string => !!x)
-                .sort()
             return {
                 name: player.name,
                 teamName: team.name,
@@ -171,58 +151,13 @@ const playerStats = computed<PlayerStat[]>(() => {
                 tasksDone: mine.length,
                 topCategory: topCategory ? capitalize(topCategory) : null,
                 bonusCracked: bonusCompletions.filter((c) => c.completedBy === player.name).length,
-                firstCompletedAt: completedAts[0] ?? null,
             }
         }),
     )
     return rows.sort((a, b) => b.tasksDone - a.tasksDone || a.name.localeCompare(b.name))
 })
 
-const awards = computed(() => {
-    const stats = playerStats.value
-    const topBy = (pick: (s: PlayerStat) => number) => {
-        const best = [...stats].sort((a, b) => pick(b) - pick(a))[0]
-        return best && pick(best) > 0 ? best : null
-    }
-    const machine = topBy((s) => s.tasksDone)
-    const codebreaker = topBy((s) => s.bonusCracked)
-    const trailblazer =
-        [...stats]
-            .filter((s) => s.firstCompletedAt)
-            .sort((a, b) => (a.firstCompletedAt! < b.firstCompletedAt! ? -1 : 1))[0] ?? null
-
-    return [
-        {
-            icon: '🏆',
-            title: 'Task Machine',
-            subtitle: 'Most tasks completed',
-            winner: machine?.name ?? null,
-            detail: machine ? `${machine.tasksDone} tasks` : null,
-        },
-        {
-            icon: '🧭',
-            title: 'Trailblazer',
-            subtitle: 'First task on the board',
-            winner: trailblazer?.name ?? null,
-            detail: trailblazer ? formatWhen(trailblazer.firstCompletedAt!) : null,
-        },
-        {
-            icon: '🔓',
-            title: 'Codebreaker',
-            subtitle: 'Most hidden challenges',
-            winner: codebreaker?.name ?? null,
-            detail: codebreaker ? `${codebreaker.bonusCracked} cracked` : null,
-        },
-    ]
-})
-
 function capitalize(s: string) {
     return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
-function formatWhen(raw: string) {
-    const date = new Date(raw.replace(' ', 'T') + 'Z')
-    if (Number.isNaN(date.getTime())) return raw
-    return date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 </script>

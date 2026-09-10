@@ -186,7 +186,7 @@
 /* ── activity rows ── */
 .feed-message {
     font-size: 18px;
-    line-height: 1.4;
+    line-height: 1.45;
     color: var(--color-fg-dim);
 }
 
@@ -194,6 +194,107 @@
     font-family: var(--font-mono);
     font-size: 13px;
     color: var(--color-muted-dim);
+}
+
+/* parsed segments */
+.fseg-player,
+.fseg-team {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--color-fg);
+}
+
+.fseg-tip {
+    cursor: help;
+    text-decoration: underline dotted rgba(200, 197, 173, 0.35);
+    text-underline-offset: 3px;
+    outline: none;
+}
+
+.fseg-tip:focus-visible {
+    text-decoration-color: var(--color-primary);
+    border-radius: 2px;
+    box-shadow: 0 0 0 2px rgba(201, 151, 42, 0.4);
+}
+
+.fseg-loot {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.fseg-coord {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.86em;
+    color: var(--color-fg);
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    padding: 0 4px;
+}
+
+.fseg-boss {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.fseg-emph {
+    color: var(--color-fg);
+    font-weight: 600;
+}
+
+.fseg-outcome {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.76em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(69, 96, 128, 0.16);
+    color: var(--color-muted);
+    white-space: nowrap;
+}
+
+.fseg-outcome.tone-good {
+    background: rgba(74, 154, 74, 0.16);
+    color: var(--color-progress);
+}
+
+.fseg-outcome.tone-bad {
+    background: rgba(204, 34, 34, 0.15);
+    color: var(--color-hit);
+}
+
+/* row marker accent by event kind */
+.feed-act.kill .feed-marker,
+.feed-act.death .feed-marker,
+.feed-act.shot-sunk .feed-marker {
+    background: rgba(139, 0, 0, 0.18);
+    color: #ff8080;
+}
+
+.feed-act.loot .feed-marker,
+.feed-act.clue .feed-marker,
+.feed-act.ca .feed-marker,
+.feed-act.slayer .feed-marker {
+    background: rgba(201, 151, 42, 0.14);
+    color: var(--color-primary);
+}
+
+.feed-act.completion .feed-marker,
+.feed-act.bonus .feed-marker,
+.feed-act.lock .feed-marker,
+.feed-act.win .feed-marker {
+    background: rgba(74, 154, 74, 0.14);
+    color: var(--color-progress);
+}
+
+.feed-act.pet .feed-marker {
+    background: rgba(93, 207, 184, 0.14);
+    color: var(--color-complete);
 }
 
 /* ── battle-history rows ── */
@@ -250,4 +351,87 @@
 .feed-shot-result.sunk {
     color: #ff8080;
     background: rgba(139, 0, 0, 0.18);
+}
+
+/* ── custom hover tooltip (player → team, boss → KC/time, loot → item list) ── */
+.feed-tip {
+    position: fixed;
+    z-index: 500;
+    max-width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 11px;
+    border-radius: var(--radius);
+    background: var(--color-bg-deep);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+    color: var(--color-fg-dim);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    pointer-events: none;
+    transform: translate(-50%, -100%);
+    animation: feed-tip-in 0.12s ease-out;
+}
+
+.feed-tip.below {
+    transform: translate(-50%, 0);
+}
+
+.feed-tip::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    margin-left: -4px;
+    background: var(--color-bg-deep);
+    border: 1px solid var(--color-border);
+    transform: rotate(45deg);
+}
+
+.feed-tip:not(.below)::after {
+    bottom: -5px;
+    border-top: none;
+    border-left: none;
+}
+
+.feed-tip.below::after {
+    top: -5px;
+    border-bottom: none;
+    border-right: none;
+}
+
+@keyframes feed-tip-in {
+    from {
+        opacity: 0;
+    }
+}
+
+.feed-tip-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-muted);
+}
+
+.feed-tip-value {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--color-fg);
+}
+
+.feed-tip-loot-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--color-fg-dim);
+}
+
+.feed-tip-loot-qty {
+    color: var(--color-primary);
+    flex-shrink: 0;
 }

@@ -28,11 +28,15 @@
                 {{ messages.length === 0 ? 'Waiting for activity…' : 'Nothing here yet.' }}
             </div>
             <div v-else class="feed-list">
-                <div v-for="(entry, i) in activity" :key="'a' + i" class="feed-item"
-                    :class="{ fail: !entry.isSuccessAction }">
-                    <span class="feed-marker">{{ entry.isSuccessAction ? '✦' : '✕' }}</span>
+                <div v-for="(entry, i) in activity" :key="'a' + i" class="feed-item feed-act"
+                    :class="[entry.parsed.kind, { fail: !entry.isSuccessAction }]">
+                    <span class="feed-marker">{{ kindIcon(entry.parsed.kind, entry.isSuccessAction) }}</span>
                     <div class="feed-item-body">
-                        <span class="feed-message">{{ entry.message }}</span>
+                        <span class="feed-message"><span v-for="(sg, j) in entry.parsed.segs" :key="j" class="fseg"
+                                :class="['fseg-' + sg.t, sg.tone ? 'tone-' + sg.tone : '', hasTip(sg) ? 'fseg-tip' : '']"
+                                :style="segStyle(sg)" :tabindex="hasTip(sg) ? 0 : undefined"
+                                @mouseenter="hasTip(sg) && openTip($event, sg)" @mouseleave="closeTip"
+                                @focusin="hasTip(sg) && openTip($event, sg)" @focusout="closeTip">{{ sg.v }}</span></span>
                         <span class="feed-time">{{ formatTime(entry.timestamp) }}</span>
                     </div>
                 </div>
@@ -61,15 +65,35 @@
                 </div>
             </div>
         </template>
+
+        <Teleport to="body">
+            <div v-if="activeTip" class="feed-tip" :class="{ below: activeTip.below }" :style="activeTip.style">
+                <template v-if="activeTip.seg.t === 'player'">
+                    <span class="feed-tip-label">Team</span>
+                    <span class="feed-tip-value" :style="teamStyleFor(activeTip.seg.team)">{{ activeTip.seg.team }}</span>
+                </template>
+                <template v-else-if="activeTip.seg.t === 'boss'">
+                    <span class="feed-tip-value">{{ activeTip.seg.meta }}</span>
+                </template>
+                <template v-else-if="activeTip.seg.t === 'loot'">
+                    <span class="feed-tip-label">Loot</span>
+                    <span v-for="(it, k) in activeTip.seg.items" :key="k" class="feed-tip-loot-row">
+                        <span>{{ it.name }}</span>
+                        <span v-if="it.qty > 1" class="feed-tip-loot-qty">×{{ it.qty }}</span>
+                    </span>
+                </template>
+            </div>
+        </Teleport>
     </div>
 </template>
 
 <script setup lang="ts">
 import '@/assets/liveFeed.css'
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { ActionMessage, Shot, Team } from '@/api/types'
 import { teamColor } from '@/utils/teamColors'
+import { parseFeedLine, type FeedKind, type FeedSeg } from '@/utils/feedLine'
 
 const props = defineProps<{
     messages: ActionMessage[]
@@ -92,11 +116,85 @@ function isAttackLine(message: string): boolean {
     return m.includes('fired at') || m.includes('attacked') || m.includes('sank') || m.includes('sunk')
 }
 
-const activity = computed(() => props.messages.filter((m) => !isAttackLine(m.message)))
-
-const battle = computed(() =>
-    [...(props.shots ?? [])].sort((a, b) => (a.firedAt < b.firedAt ? 1 : a.firedAt > b.firedAt ? -1 : 0)),
+// messages already arrive newest-first (see useGameData.pushLiveMessage).
+const activity = computed(() =>
+    props.messages
+        .filter((m) => !isAttackLine(m.message))
+        .map((m) => ({ ...m, parsed: parseFeedLine(m.message, m.isSuccessAction) })),
 )
+
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+function teamStyleFor(name?: string): Record<string, string> | undefined {
+    if (!name || !props.teams?.length) return undefined
+    const t = props.teams.find((x) => norm(x.name) === norm(name))
+    return t ? { color: teamColor(props.teams, t.id) } : undefined
+}
+
+function segStyle(sg: FeedSeg): Record<string, string> | undefined {
+    if (sg.t !== 'player' && sg.t !== 'team') return undefined
+    return teamStyleFor(sg.t === 'player' ? sg.team : sg.v)
+}
+
+// ── custom hover tooltip ──
+interface ActiveTip {
+    seg: FeedSeg
+    style: Record<string, string>
+    below: boolean
+}
+const activeTip = ref<ActiveTip | null>(null)
+let tipTimer: ReturnType<typeof setTimeout> | undefined
+
+function hasTip(sg: FeedSeg): boolean {
+    return (sg.t === 'player' && !!sg.team) || (sg.t === 'boss' && !!sg.meta) || (sg.t === 'loot' && !!sg.items?.length)
+}
+
+function openTip(e: Event, sg: FeedSeg): void {
+    clearTimeout(tipTimer)
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const below = r.top < 96
+    activeTip.value = {
+        seg: sg,
+        below,
+        style: {
+            left: `${Math.round(r.left + r.width / 2)}px`,
+            top: `${Math.round(below ? r.bottom + 8 : r.top - 8)}px`,
+        },
+    }
+}
+
+function closeTip(): void {
+    clearTimeout(tipTimer)
+    tipTimer = setTimeout(() => (activeTip.value = null), 60)
+}
+
+onUnmounted(() => clearTimeout(tipTimer))
+
+const KIND_ICON: Partial<Record<FeedKind, string>> = {
+    completion: '✓',
+    progress: '▸',
+    bonus: '★',
+    kill: '☠',
+    loot: '◆',
+    slayer: '⚔',
+    ca: '✦',
+    clue: '◇',
+    pet: '❖',
+    death: '✕',
+    lock: '⚓',
+    'shot-hit': '✕',
+    'shot-sunk': '☠',
+    'shot-miss': '◌',
+    win: '★',
+}
+
+function kindIcon(kind: FeedKind, ok: boolean): string {
+    return KIND_ICON[kind] ?? (ok ? '✦' : '✕')
+}
+
+// /getShots comes back oldest-first (ORDER BY id); reverse for newest-first
+// without losing same-second ordering the way a firedAt sort would.
+const battle = computed(() => [...(props.shots ?? [])].reverse())
 
 const tabs = computed(() => [
     { key: 'activity' as const, label: 'Activity', count: activity.value.length },
