@@ -10,14 +10,24 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 16px;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
+}
+
+.live-feed-head-left {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    min-width: 0;
 }
 
 .live-feed-title {
     margin: 0;
     font-size: 17px;
+    white-space: nowrap;
 }
 
 .live-feed-status {
@@ -25,8 +35,9 @@
     align-items: center;
     gap: 6px;
     font-family: var(--font-mono);
-    font-size: 15px;
+    font-size: 13px;
     color: var(--color-muted-dim);
+    white-space: nowrap;
 }
 
 .live-feed-dot {
@@ -42,39 +53,77 @@
     box-shadow: none;
 }
 
-.live-feed-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--color-border);
+.live-feed-popout {
     flex-shrink: 0;
-}
-
-.live-feed-filter {
     font-family: var(--font-sans);
-    font-size: 14px;
-    font-weight: 500;
-    padding: 4px 10px;
-    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 11px;
+    border-radius: var(--radius);
     background: var(--color-card);
     color: var(--color-secondary);
     border: 1px solid var(--color-border);
     cursor: pointer;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
 }
 
-.live-feed-filter.active {
-    background: var(--color-primary);
-    color: var(--color-bg);
-    border-color: var(--color-primary);
+.live-feed-popout:hover {
+    color: var(--color-fg);
+    border-color: var(--color-secondary);
+}
+
+/* ── two tabs ── */
+.live-feed-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.live-feed-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 11px 8px;
+    font-family: var(--font-display);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--color-muted);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.live-feed-tab:hover {
+    color: var(--color-fg-dim);
+}
+
+.live-feed-tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.live-feed-tab-count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-muted-dim);
+}
+
+.live-feed-tab.active .live-feed-tab-count {
+    color: var(--color-primary);
 }
 
 .feed-empty {
     padding: 24px 16px;
     text-align: center;
     font-family: var(--font-mono);
-    font-size: 17px;
+    font-size: 16px;
     color: var(--color-muted-dim);
 }
 
@@ -134,14 +183,71 @@
     gap: 2px;
 }
 
+/* ── activity rows ── */
 .feed-message {
-    font-size: 19px;
+    font-size: 18px;
     line-height: 1.4;
     color: var(--color-fg-dim);
 }
 
 .feed-time {
     font-family: var(--font-mono);
-    font-size: 14px;
+    font-size: 13px;
     color: var(--color-muted-dim);
+}
+
+/* ── battle-history rows ── */
+.feed-shot .feed-item-body {
+    gap: 4px;
+}
+
+.feed-shot-line {
+    font-size: 17px;
+    line-height: 1.35;
+    color: var(--color-fg-dim);
+}
+
+.feed-shot-team {
+    font-family: var(--font-display);
+    font-weight: 600;
+}
+
+.feed-shot-verb {
+    color: var(--color-muted);
+}
+
+.feed-shot-coord {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--color-fg);
+}
+
+.feed-shot-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.feed-shot-result {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 1px 8px;
+    border-radius: 999px;
+}
+
+.feed-shot-result.hit {
+    color: var(--color-hit);
+    background: rgba(204, 34, 34, 0.14);
+}
+
+.feed-shot-result.miss {
+    color: var(--color-miss);
+    background: rgba(58, 122, 170, 0.14);
+}
+
+.feed-shot-result.sunk {
+    color: #ff8080;
+    background: rgba(139, 0, 0, 0.18);
 }

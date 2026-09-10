@@ -1,0 +1,9 @@
+.feed-view {
+    height: 100%;
+    display: flex;
+}
+
+.feed-view .live-feed {
+    flex: 1;
+    min-width: 0;
+}

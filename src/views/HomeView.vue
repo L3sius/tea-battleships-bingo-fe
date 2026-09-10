@@ -5,7 +5,8 @@
         </div>
 
         <div class="game-layout">
-            <LiveFeed class="layout-left" :messages="liveMessages" :connected="connected" />
+            <LiveFeed class="layout-left" :messages="liveMessages" :shots="shots" :teams="teams"
+                :connected="connected" />
 
             <div class="layout-center">
                 <BattleshipBoard :team-id="selectedTeam" :teams="teams" :board="board" :shots="shots"

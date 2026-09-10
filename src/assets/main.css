@@ -57,6 +57,11 @@ main,
     overflow: auto;
 }
 
+/* Pop-out feed window: no nav chrome, feed fills the whole window. */
+.router-view-bare {
+    overflow: hidden;
+}
+
 * {
     scrollbar-width: thin;
     scrollbar-color: var(--color-border) transparent;

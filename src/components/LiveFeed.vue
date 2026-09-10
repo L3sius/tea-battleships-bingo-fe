@@ -1,92 +1,137 @@
 <template>
-    <div class="live-feed">
+    <div class="live-feed" :class="{ detached }">
         <div class="live-feed-header">
-            <h3 class="panel-title live-feed-title">Live Feed</h3>
-            <div class="live-feed-status">
-                <span class="live-feed-dot" :class="{ off: !connected }" />
-                <span>{{ connected ? 'LIVE' : 'CONNECTING' }}</span>
+            <div class="live-feed-head-left">
+                <h3 class="panel-title live-feed-title">Live Feed</h3>
+                <span class="live-feed-status">
+                    <span class="live-feed-dot" :class="{ off: !connected }" />
+                    {{ connected ? 'LIVE' : 'CONNECTING' }}
+                </span>
             </div>
-        </div>
-
-        <div class="live-feed-filters">
-            <button v-for="f in filters" :key="f.key" class="live-feed-filter" :class="{ active: filter === f.key }"
-                @click="filter = f.key">
-                {{ f.label }}
+            <button v-if="!detached" type="button" class="live-feed-popout"
+                title="Open this feed in its own window — handy for a second monitor or a stream overlay" @click="popOut">
+                ⧉&nbsp;Pop out
             </button>
         </div>
 
-        <div v-if="filteredMessages.length === 0" class="feed-empty">
-            {{ messages.length === 0 ? 'Waiting for activity…' : 'No matching events.' }}
+        <div class="live-feed-tabs" role="tablist">
+            <button v-for="t in tabs" :key="t.key" type="button" class="live-feed-tab" role="tab"
+                :class="{ active: tab === t.key }" :aria-selected="tab === t.key" @click="tab = t.key">
+                {{ t.label }}
+                <span class="live-feed-tab-count">{{ t.count }}</span>
+            </button>
         </div>
-        <div v-else class="feed-list">
-            <div v-for="(entry, index) in filteredMessages" :key="index" class="feed-item"
-                :class="[classify(entry.message), { fail: !entry.isSuccessAction }]">
-                <span class="feed-marker">{{ markerFor(classify(entry.message)) }}</span>
-                <div class="feed-item-body">
-                    <span class="feed-message">{{ entry.message }}</span>
-                    <span class="feed-time">{{ formatTime(entry.timestamp) }}</span>
+
+        <!-- Activity: what clan members are doing right now (Dink events) -->
+        <template v-if="tab === 'activity'">
+            <div v-if="activity.length === 0" class="feed-empty">
+                {{ messages.length === 0 ? 'Waiting for activity…' : 'Nothing here yet.' }}
+            </div>
+            <div v-else class="feed-list">
+                <div v-for="(entry, i) in activity" :key="'a' + i" class="feed-item"
+                    :class="{ fail: !entry.isSuccessAction }">
+                    <span class="feed-marker">{{ entry.isSuccessAction ? '✦' : '✕' }}</span>
+                    <div class="feed-item-body">
+                        <span class="feed-message">{{ entry.message }}</span>
+                        <span class="feed-time">{{ formatTime(entry.timestamp) }}</span>
+                    </div>
                 </div>
             </div>
-        </div>
+        </template>
+
+        <!-- Battle History: every shot fired, with its outcome -->
+        <template v-else>
+            <div v-if="battle.length === 0" class="feed-empty">No shots fired yet.</div>
+            <div v-else class="feed-list">
+                <div v-for="(s, i) in battle" :key="'b' + i" class="feed-item feed-shot" :class="s.result">
+                    <span class="feed-marker">{{ shotMarker(s.result) }}</span>
+                    <div class="feed-item-body">
+                        <span class="feed-shot-line">
+                            <span class="feed-shot-team" :style="{ color: teamColorOf(s.attackerTeamId) }">
+                                {{ teamName(s.attackerTeamId) }}
+                            </span>
+                            <span class="feed-shot-verb"> fired at </span>
+                            <span class="feed-shot-coord">{{ s.coord }}</span>
+                        </span>
+                        <span class="feed-shot-meta">
+                            <span class="feed-shot-result" :class="s.result">{{ resultLabel(s) }}</span>
+                            <span class="feed-time">{{ formatTime(s.firedAt) }}</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </template>
     </div>
 </template>
 
 <script setup lang="ts">
 import '@/assets/liveFeed.css'
 import { computed, ref } from 'vue'
-import type { ActionMessage } from '@/api/types'
+import { useRouter } from 'vue-router'
+import type { ActionMessage, Shot, Team } from '@/api/types'
+import { teamColor } from '@/utils/teamColors'
 
-const props = defineProps<{ messages: ActionMessage[]; connected?: boolean }>()
+const props = defineProps<{
+    messages: ActionMessage[]
+    shots?: Shot[]
+    teams?: Team[]
+    connected?: boolean
+    /** true when rendered in the standalone /feed popup window */
+    detached?: boolean
+}>()
 
-type FeedCategory = 'task' | 'attack' | 'hit' | 'miss' | 'sunk'
-type FeedFilter = 'all' | FeedCategory
+const router = useRouter()
 
-const filters: { key: FeedFilter; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'task', label: 'Tasks' },
-    { key: 'attack', label: 'Attacks' },
-    { key: 'hit', label: 'Hits' },
-    { key: 'miss', label: 'Misses' },
-    { key: 'sunk', label: 'Sunk' },
-]
+type Tab = 'activity' | 'battle'
+const tab = ref<Tab>('activity')
 
-const filter = ref<FeedFilter>('all')
-
-// The backend only sends a pre-formatted human-readable line per event, not a
-// structured type — this is a best-effort classification for filtering, not
-// an authoritative category.
-function classify(message: string): FeedCategory {
+// Attacks also arrive on the action stream as prose lines. Keep them out of the
+// Activity tab — the Battle History tab covers them from structured shot data.
+function isAttackLine(message: string): boolean {
     const m = message.toLowerCase()
-    if (m.includes('sank') || m.includes('sunk')) return 'sunk'
-    if (m.includes('miss')) return 'miss'
-    if (m.includes('hit')) return 'hit'
-    if (m.includes('fired at') || m.includes('attacked')) return 'attack'
-    return 'task'
+    return m.includes('fired at') || m.includes('attacked') || m.includes('sank') || m.includes('sunk')
 }
 
-function markerFor(category: FeedCategory): string {
-    switch (category) {
-        case 'sunk':
-            return '☠'
-        case 'hit':
-            return '✕'
-        case 'miss':
-            return '◌'
-        case 'attack':
-            return '⚓'
-        default:
-            return '✓'
-    }
+const activity = computed(() => props.messages.filter((m) => !isAttackLine(m.message)))
+
+const battle = computed(() =>
+    [...(props.shots ?? [])].sort((a, b) => (a.firedAt < b.firedAt ? 1 : a.firedAt > b.firedAt ? -1 : 0)),
+)
+
+const tabs = computed(() => [
+    { key: 'activity' as const, label: 'Activity', count: activity.value.length },
+    { key: 'battle' as const, label: 'Battle History', count: battle.value.length },
+])
+
+function teamName(id: number): string {
+    return props.teams?.find((t) => t.id === id)?.name ?? `Team ${id}`
 }
 
-const filteredMessages = computed(() => {
-    if (filter.value === 'all') return props.messages
-    return props.messages.filter((m) => classify(m.message) === filter.value)
-})
+function teamColorOf(id: number): string {
+    return props.teams?.length ? teamColor(props.teams, id) : 'var(--color-fg)'
+}
 
-function formatTime(timestamp: string) {
-    const date = new Date(timestamp)
-    if (Number.isNaN(date.getTime())) return timestamp
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+function shotMarker(result: Shot['result']): string {
+    return result === 'sunk' ? '☠' : result === 'hit' ? '✕' : '◌'
+}
+
+function resultLabel(s: Shot): string {
+    if (s.result === 'sunk') return `SUNK${s.sunkShipKey ? ' · ' + capitalize(s.sunkShipKey) : ''}`
+    return s.result.toUpperCase()
+}
+
+function capitalize(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+function formatTime(ts: string): string {
+    let d = new Date(ts)
+    if (Number.isNaN(d.getTime())) d = new Date(ts.replace(' ', 'T') + 'Z')
+    return Number.isNaN(d.getTime()) ? ts : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+function popOut() {
+    const href = router.resolve({ name: 'Feed' }).href
+    window.open(href, 'battleships-feed', 'popup,width=460,height=860')
 }
 </script>
