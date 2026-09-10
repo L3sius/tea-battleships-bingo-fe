@@ -1,6 +1,25 @@
 import { ref } from 'vue'
 import * as api from '@/api/client'
-import type { ActionMessage, BonusTask, GameStreamEvent, GetBoardResponse, ShipStatusTeam, Shot, Team } from '@/api/types'
+import type {
+    ActionMessage,
+    BonusTask,
+    GameStreamEvent,
+    GetBoardResponse,
+    ShipStatusTeam,
+    Shot,
+    ShotResult,
+    Team,
+} from '@/api/types'
+
+/** A shot someone (possibly another client) just fired, for replaying its animation. */
+export interface ShotFiredSignal {
+    attackerTeamId: number
+    targetTeamId: number
+    coord: string
+    result: ShotResult
+    sunkShipKey: string | null
+    animationSeed: number
+}
 
 const teams = ref<Team[]>([])
 const board = ref<GetBoardResponse | null>(null)
@@ -10,6 +29,9 @@ const shots = ref<Shot[]>([])
 const liveMessages = ref<ActionMessage[]>([])
 const errorMessage = ref<string | null>(null)
 const connected = ref(false)
+// Reassigned on every shot_fired game event (from any client). Components watch
+// its identity to replay the attack animation in sync across all viewers.
+const lastShotFired = ref<ShotFiredSignal | null>(null)
 
 const MAX_LIVE_MESSAGES = 100
 
@@ -47,6 +69,18 @@ function handleGameEvent(evt: GameStreamEvent) {
             refreshBoard().catch(reportError)
             break
         case 'shot_fired':
+            lastShotFired.value = {
+                attackerTeamId: evt.attackerTeamId,
+                targetTeamId: evt.targetTeamId,
+                coord: evt.coord,
+                result: evt.result,
+                sunkShipKey: evt.sunkShipKey,
+                animationSeed: evt.animationSeed,
+            }
+            refreshBoard().catch(reportError)
+            refreshShipStatus().catch(reportError)
+            refreshShots().catch(reportError)
+            break
         case 'game_won':
             refreshBoard().catch(reportError)
             refreshShipStatus().catch(reportError)
@@ -114,7 +148,9 @@ function start() {
 async function fireAt(teamId: number, coord: string, firedBy?: string) {
     try {
         const result = await api.fire({ teamId, coord, firedBy })
-        await Promise.all([refreshBoard(), refreshShipStatus(), refreshShots()])
+        // Refresh in the background so the caller can start the attack animation
+        // immediately; the shot_fired game event also triggers these refreshes.
+        Promise.all([refreshBoard(), refreshShipStatus(), refreshShots()]).catch(reportError)
         return result
     } catch (err) {
         reportError(err)
@@ -133,6 +169,7 @@ export function useGameData() {
         liveMessages,
         errorMessage,
         connected,
+        lastShotFired,
         fireAt,
         refreshBoard,
     }

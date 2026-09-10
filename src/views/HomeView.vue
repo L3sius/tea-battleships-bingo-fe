@@ -11,7 +11,8 @@
             <div class="layout-center">
                 <BattleshipBoard :team-id="selectedTeam" :teams="teams" :board="board" :shots="shots"
                     :show-test-ships="showTestShips" :force-attack-type="forceAttackType"
-                    :on-fire="handleFireRequest" @fire-result="handleFireResult" @fire-error="handleFireError" />
+                    :last-shot-fired="lastShotFired" :on-fire="handleFireRequest"
+                    @fire-result="handleFireResult" @fire-error="handleFireError" />
                 <Legend />
             </div>
 
@@ -47,13 +48,14 @@ import Legend from '@/components/Legend.vue'
 import { useGameData } from '@/composables/useGameData'
 import type { FireResponse } from '@/api/types'
 
-const { teams, board, shipStatusTeams, bonusTasks, shots, liveMessages, errorMessage, connected, fireAt } = useGameData()
+const { teams, board, shipStatusTeams, bonusTasks, shots, liveMessages, errorMessage, connected, lastShotFired, fireAt } =
+    useGameData()
 
 const isDev = import.meta.env.DEV
 const showTestShips = ref(false)
 
 // Dev-only: pin every shot to one attack style for testing instead of the
-// normal random pick. Temporarily replaces the old show-test-ships toggle
+// seed-derived pick. Temporarily replaces the old show-test-ships toggle
 // in this same corner — that ref/prop is still wired up, just not exposed
 // in the UI right now.
 const attackStyleOptions = [null, 'cannon', 'nuke', 'laser', 'kraken', 'storm'] as const

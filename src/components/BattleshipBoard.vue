@@ -120,6 +120,7 @@
 import '@/assets/battleshipBoard.css'
 import { computed, ref, watch } from 'vue'
 import type { BoardTeam, BoardTile, FireResponse, GetBoardResponse, Shot, ShotResult, Team } from '@/api/types'
+import type { ShotFiredSignal } from '@/composables/useGameData'
 import { parseCoord } from '@/utils/coord'
 import { generateFakeFleet, type FakeShipPlacement } from '@/utils/fakeFleet'
 import { localItemImagePath } from '@/utils/itemImage'
@@ -136,8 +137,10 @@ const props = defineProps<{
     board: GetBoardResponse | null
     shots: Shot[]
     showTestShips?: boolean
-    /** Dev-only: pin every shot to this attack style instead of picking randomly. */
+    /** Dev-only: pin every shot to this attack style instead of the seed-derived one. */
     forceAttackType?: 'cannon' | 'nuke' | 'laser' | 'kraken' | 'storm' | null
+    /** Newest shot from the game stream — replays its animation for observers. */
+    lastShotFired?: ShotFiredSignal | null
     /** Parent owns the actual API call (and the board/shots refetch it triggers). */
     onFire: (coord: string) => Promise<FireResponse>
 }>()
@@ -323,15 +326,23 @@ function statusClass(tile: BoardTile) {
     return myShots.value.get(tile.coord)?.result === 'miss' ? 'miss' : 'hit'
 }
 
-// Firing plays an animation while the real /fire call happens in the
-// background; the outcome only gets revealed once BOTH the projectile has
-// visually landed and the network result is known (see CannonShot).
+// Firing plays an animation, then reveals the outcome once BOTH the projectile
+// has visually landed and the network result is known (see CannonShot). The
+// attack style is derived from the backend's per-shot `animationSeed` (mod the
+// number of styles) so every client — the firer and every observer watching
+// that team's board — plays the exact same animation and sound.
 type AttackType = 'cannon' | 'nuke' | 'laser' | 'kraken' | 'storm'
 const ATTACK_TYPES: AttackType[] = ['cannon', 'nuke', 'laser', 'kraken', 'storm']
+
+function attackTypeForSeed(seed: number): AttackType {
+    const n = ATTACK_TYPES.length
+    return ATTACK_TYPES[((Math.trunc(seed) % n) + n) % n]!
+}
 
 interface ActiveShot {
     id: number
     coord: string
+    attackerTeamId: number
     targetEl: HTMLElement
     result: ShotResult | null
     attackType: AttackType
@@ -342,51 +353,73 @@ interface ActiveShot {
 let nextShotId = 0
 const activeShots = ref<ActiveShot[]>([])
 
+// `${attackerTeamId}:${coord}` for shots already animated, so the local fire
+// call and the shot_fired stream echo (whichever lands first) don't double up.
+const seenShots = new Set<string>()
+
 // The tile's own hit/miss icon is driven by `props.shots`, which updates as
 // soon as the network call resolves — often well before the cannonball has
 // even landed. Suppress it for coords with an animation in flight so it pops
 // in sync with the animation's own impact instead of spoiling it early.
 const pendingReveal = ref<Set<string>>(new Set())
 
-async function fireSelectedTile() {
-    if (!selectedTile.value) return
-    const coord = selectedTile.value.coord
-    selectedCoord.value = null
-
+function spawnShot(
+    coord: string,
+    attackerTeamId: number,
+    result: ShotResult,
+    attackType: AttackType,
+    fireResponse: FireResponse | null,
+): boolean {
     const targetEl = gridEl.value?.querySelector<HTMLElement>(`[data-coord="${coord}"]`)
-    if (!targetEl || !gridEl.value) {
-        // No DOM target to aim the animation at — just fire directly.
-        try {
-            emit('fire-result', await props.onFire(coord))
-        } catch (err) {
-            emit('fire-error', err)
-        }
-        return
-    }
+    if (!targetEl) return false
+    pendingReveal.value.add(coord)
+    activeShots.value.push({ id: nextShotId++, coord, attackerTeamId, targetEl, result, attackType, fireResponse })
+    return true
+}
 
-    const id = nextShotId++
-    const attackType: AttackType = props.forceAttackType ?? ATTACK_TYPES[Math.floor(Math.random() * ATTACK_TYPES.length)]!
-    activeShots.value.push({ id, coord, targetEl, result: null, attackType, fireResponse: null })
+async function fireSelectedTile() {
+    if (!selectedTile.value || props.teamId == null) return
+    const coord = selectedTile.value.coord
+    const teamId = props.teamId
+    selectedCoord.value = null
     pendingReveal.value.add(coord)
 
     try {
         const result = await props.onFire(coord)
-        // Push wrapped the object in a new reactive proxy — mutate that one
-        // (found via the array), not the raw object literal above, or the
-        // CannonShot's `result` prop will never actually update.
-        const shot = activeShots.value.find((s) => s.id === id)
-        if (shot) {
-            shot.result = result.result
-            shot.fireResponse = result
+        const key = `${teamId}:${coord}`
+        const live = activeShots.value.find((s) => s.coord === coord && s.attackerTeamId === teamId)
+        if (live) {
+            // The shot_fired stream echo beat our HTTP response and already
+            // started the animation — just hand it the response for the toast.
+            live.fireResponse = result
+        } else if (!seenShots.has(key)) {
+            seenShots.add(key)
+            const attackType = props.forceAttackType ?? attackTypeForSeed(result.animationSeed)
+            if (!spawnShot(coord, teamId, result.result, attackType, result)) {
+                // No board tile to aim at — surface the outcome directly.
+                pendingReveal.value.delete(coord)
+                emit('fire-result', result)
+            }
         }
-        // Don't emit fire-result yet — the toast should land in sync with the
-        // animation's own reveal (see onShotBurst), not spoil it early.
     } catch (err) {
-        activeShots.value = activeShots.value.filter((s) => s.id !== id)
         pendingReveal.value.delete(coord)
         emit('fire-error', err)
     }
 }
+
+// Replay the animation for every other client viewing this team's board, using
+// the same seed so it matches what the firer saw.
+watch(
+    () => props.lastShotFired,
+    (evt) => {
+        if (!evt || props.teamId == null || evt.attackerTeamId !== props.teamId) return
+        const key = `${evt.attackerTeamId}:${evt.coord}`
+        if (seenShots.has(key)) return
+        seenShots.add(key)
+        const attackType = props.forceAttackType ?? attackTypeForSeed(evt.animationSeed)
+        spawnShot(evt.coord, evt.attackerTeamId, evt.result, attackType, null)
+    },
+)
 
 function onShotBurst(coord: string) {
     pendingReveal.value.delete(coord)

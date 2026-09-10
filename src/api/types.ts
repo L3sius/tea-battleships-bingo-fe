@@ -29,6 +29,8 @@ export interface IncomingShot {
     result: ShotResult
     sunkShipKey: string | null
     firedAt: string
+    /** Backend-chosen seed; every client resolves it to the same attack animation. */
+    animationSeed: number
 }
 
 export interface BoardTile {
@@ -107,6 +109,8 @@ export interface Shot {
     sunkShipCells?: string[]
     firedBy: string | null
     firedAt: string
+    /** Backend-chosen seed; every client resolves it to the same attack animation. */
+    animationSeed: number
 }
 
 export interface GetShotsResponse {
@@ -128,6 +132,8 @@ export interface FireResponse {
     result: 'miss' | 'hit' | 'sunk'
     sunkShipKey: string | null
     gameWon: boolean
+    /** Backend-chosen seed; every client resolves it to the same attack animation. */
+    animationSeed: number
 }
 
 export interface ApiErrorBody {
@@ -151,6 +157,8 @@ export type GameStreamEvent =
           result: ShotResult
           sunkShipKey: string | null
           firedBy: string
+          /** Backend-chosen seed; every client resolves it to the same attack animation. */
+          animationSeed: number
       }
     | {
           event: 'bonus_completed'
