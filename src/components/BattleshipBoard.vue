@@ -14,7 +14,8 @@
                 <template v-if="boardTeam">
                     <div v-for="tile in boardTeam.tiles" :key="tile.coord" class="battle-board-cell"
                         :class="tileClasses(tile)" :style="tileGridStyle(tile.coord)" :data-coord="tile.coord"
-                        @click="onTileClick(tile)">
+                        @click="onTileClick(tile)" @mouseenter="hoveredCoord = tile.coord"
+                        @mouseleave="hoveredCoord = null">
                         <img v-if="tile.task?.imageUrl && !isSunkCell(tile.coord)" class="tile-item-icon"
                             :class="{ dimmed: tile.completed }" :src="localItemImagePath(tile.task.imageUrl) ?? tile.task.imageUrl"
                             :alt="tile.task.name" @error="onImageError($event, tile.task.imageUrl)" />
@@ -29,6 +30,8 @@
                             class="shot-marker" :class="outgoingClass(tile.coord)">
                             {{ outgoingSymbol(tile.coord) }}
                         </span>
+
+                        <span v-if="hoveredCoord === tile.coord" class="tile-coord-tooltip">{{ tile.coord }}</span>
                     </div>
 
                     <div v-for="ship in sunkShips" :key="'sunk-' + ship.key" class="sunk-ship-reveal"
@@ -38,14 +41,19 @@
 
                     <template v-for="shot in activeShots" :key="shot.id">
                         <CannonShot v-if="shot.attackType === 'cannon'" :target-el="shot.targetEl"
-                            :result="shot.result" @burst="onShotBurst(shot.coord)" @done="onShotDone(shot.id)" />
+                            :result="shot.result" :attacker-color="attackerColor" :defender-name="defenderName(shot)"
+                            @burst="onShotBurst(shot.coord)" @done="onShotDone(shot.id)" />
                         <NukeDrop v-else-if="shot.attackType === 'nuke'" :target-el="shot.targetEl"
-                            :result="shot.result" @burst="onShotBurst(shot.coord)" @done="onShotDone(shot.id)" />
+                            :result="shot.result" :attacker-color="attackerColor" :defender-name="defenderName(shot)"
+                            @burst="onShotBurst(shot.coord)" @done="onShotDone(shot.id)" />
                         <OrbitalLaser v-else-if="shot.attackType === 'laser'" :target-el="shot.targetEl"
-                            :result="shot.result" @burst="onShotBurst(shot.coord)" @done="onShotDone(shot.id)" />
+                            :result="shot.result" :attacker-color="attackerColor" :defender-name="defenderName(shot)"
+                            @burst="onShotBurst(shot.coord)" @done="onShotDone(shot.id)" />
                         <KrakenTentacle v-else-if="shot.attackType === 'kraken'" :target-el="shot.targetEl"
-                            :result="shot.result" @burst="onShotBurst(shot.coord)" @done="onShotDone(shot.id)" />
+                            :result="shot.result" :attacker-color="attackerColor" :defender-name="defenderName(shot)"
+                            @burst="onShotBurst(shot.coord)" @done="onShotDone(shot.id)" />
                         <StormStrike v-else :target-el="shot.targetEl" :result="shot.result"
+                            :attacker-color="attackerColor" :defender-name="defenderName(shot)"
                             @burst="onShotBurst(shot.coord)" @done="onShotDone(shot.id)" />
                     </template>
 
@@ -60,36 +68,48 @@
             </div>
         </div>
 
-        <div v-if="selectedTile" class="tile-modal-backdrop" @click.self="selectedCoord = null">
+        <div v-if="selectedTile" class="tile-modal-backdrop" @click.self="closeModal">
             <div class="tile-modal">
                 <div class="tile-modal-header">
-                    <h3>{{ selectedTile.coord }}</h3>
-                    <button class="tile-modal-close" @click="selectedCoord = null">✕</button>
+                    <div class="tile-modal-header-left">
+                        <span class="tile-modal-coord">{{ selectedTile.coord }}</span>
+                        <span class="tile-modal-status-pill" :class="statusClass(selectedTile)">{{ statusText(selectedTile) }}</span>
+                    </div>
+                    <button class="tile-modal-close" @click="closeModal">✕</button>
                 </div>
 
                 <div v-if="selectedTile.task" class="tile-modal-body">
-                    <img v-if="selectedTile.task.imageUrl" class="tile-modal-icon"
-                        :src="localItemImagePath(selectedTile.task.imageUrl) ?? selectedTile.task.imageUrl"
-                        :alt="selectedTile.task.name" @error="onImageError($event, selectedTile.task.imageUrl)" />
-
+                    <div class="tile-modal-icon-frame">
+                        <img v-if="selectedTile.task.imageUrl" class="tile-modal-icon"
+                            :src="localItemImagePath(selectedTile.task.imageUrl) ?? selectedTile.task.imageUrl"
+                            :alt="selectedTile.task.name" @error="onImageError($event, selectedTile.task.imageUrl)" />
+                    </div>
                     <h4 class="tile-modal-name">{{ selectedTile.task.name }}</h4>
-                    <p class="tile-modal-description">{{ selectedTile.task.description }}</p>
 
-                    <div v-if="selectedTile.target > 1" class="tile-modal-progress">
-                        <span class="tile-progress-track">
-                            <span class="tile-progress-fill" :style="{ width: progressPercent(selectedTile) + '%' }"></span>
-                        </span>
-                        <span>{{ selectedTile.progress }}/{{ selectedTile.target }}</span>
+                    <div class="tile-modal-section">
+                        <label class="tile-modal-label">Description</label>
+                        <p class="tile-modal-description">{{ selectedTile.task.description }}</p>
                     </div>
 
-                    <p class="tile-modal-status" :class="statusClass(selectedTile)">{{ statusText(selectedTile) }}</p>
-
-                    <button v-if="canFire(selectedTile)" class="tile-modal-fire-btn" @click="fireSelectedTile">
-                        Fire at {{ selectedTile.coord }}!
-                    </button>
+                    <div v-if="selectedTile.target > 1" class="tile-modal-section">
+                        <div class="tile-modal-section-head">
+                            <label class="tile-modal-label">Progress</label>
+                            <span class="tile-modal-progress-count">{{ selectedTile.progress }}/{{ selectedTile.target }}</span>
+                        </div>
+                        <span class="tile-progress-track tile-modal-progress-track">
+                            <span class="tile-progress-fill" :style="{ width: progressPercent(selectedTile) + '%' }"></span>
+                        </span>
+                    </div>
                 </div>
                 <div v-else class="tile-modal-body">
                     <p>No task assigned to this tile yet.</p>
+                </div>
+
+                <div v-if="selectedTile.task" class="tile-modal-footer">
+                    <button v-if="canFire(selectedTile)" class="tile-modal-fire-btn" @click="fireSelectedTile">
+                        ⚓ Fire
+                    </button>
+                    <button v-else class="tile-modal-cancel-btn tile-modal-close-btn" @click="closeModal">Close</button>
                 </div>
             </div>
         </div>
@@ -99,10 +119,11 @@
 <script setup lang="ts">
 import '@/assets/battleshipBoard.css'
 import { computed, ref, watch } from 'vue'
-import type { BoardTeam, BoardTile, FireResponse, GetBoardResponse, Shot, ShotResult } from '@/api/types'
+import type { BoardTeam, BoardTile, FireResponse, GetBoardResponse, Shot, ShotResult, Team } from '@/api/types'
 import { parseCoord } from '@/utils/coord'
 import { generateFakeFleet, type FakeShipPlacement } from '@/utils/fakeFleet'
 import { localItemImagePath } from '@/utils/itemImage'
+import { teamColor } from '@/utils/teamColors'
 import CannonShot from './CannonShot.vue'
 import NukeDrop from './NukeDrop.vue'
 import OrbitalLaser from './OrbitalLaser.vue'
@@ -111,6 +132,7 @@ import StormStrike from './StormStrike.vue'
 
 const props = defineProps<{
     teamId: number | null
+    teams: Team[]
     board: GetBoardResponse | null
     shots: Shot[]
     showTestShips?: boolean
@@ -119,6 +141,14 @@ const props = defineProps<{
     /** Parent owns the actual API call (and the board/shots refetch it triggers). */
     onFire: (coord: string) => Promise<FireResponse>
 }>()
+
+// Shared by every attack's AttackImpact reveal: the mast flag on the
+// ship-sunk scene, and the "<team>'s fleet takes a direct hit" caption.
+const attackerColor = computed(() => teamColor(props.teams, props.teamId ?? -1))
+
+function defenderName(shot: ActiveShot) {
+    return shot.fireResponse?.targetTeamName ?? null
+}
 
 const emit = defineEmits<{ 'fire-result': [result: FireResponse]; 'fire-error': [error: unknown] }>()
 
@@ -253,9 +283,10 @@ function onImageError(event: Event, remoteUrl: string | null) {
     img.src = remoteUrl
 }
 
-// Clicking a tile opens a detail panel rather than firing immediately — the
-// explicit "Fire!" button inside it is the actual confirmation step.
+// Clicking a tile opens a detail drawer rather than firing immediately — the
+// "Fire" button in that drawer is the actual trigger.
 const selectedCoord = ref<string | null>(null)
+const hoveredCoord = ref<string | null>(null)
 
 const selectedTile = computed<BoardTile | null>(() => {
     if (!selectedCoord.value) return null
@@ -264,6 +295,10 @@ const selectedTile = computed<BoardTile | null>(() => {
 
 function onTileClick(tile: BoardTile) {
     selectedCoord.value = tile.coord
+}
+
+function closeModal() {
+    selectedCoord.value = null
 }
 
 function canFire(tile: BoardTile) {

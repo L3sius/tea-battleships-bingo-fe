@@ -1,0 +1,215 @@
+/* Shared hit/miss/sunk reveal — the "moment of truth" every attack style
+   mounts once its own lead-up reaches impact and the real result is known. */
+
+/* ── Hit explosion ── */
+.atk-hit-flash,
+.atk-hit-ring {
+    position: fixed;
+    border-radius: 50%;
+    z-index: 335;
+    pointer-events: none;
+}
+
+.atk-hit-flash {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.96) 0%, rgba(255, 140, 20, 0.82) 28%, rgba(255, 45, 0, 0.55) 58%, transparent 100%);
+    animation: atk-explosion-ring 0.46s ease-out forwards;
+}
+
+.atk-hit-ring.r1 {
+    border: 3.5px solid rgba(255, 110, 20, 0.72);
+    animation: atk-explosion-ring 0.56s 0.06s ease-out forwards;
+}
+
+.atk-hit-ring.r2 {
+    border: 2px solid rgba(180, 60, 10, 0.42);
+    animation: atk-explosion-ring 0.72s 0.14s ease-out forwards;
+}
+
+@keyframes atk-explosion-ring {
+    0% {
+        transform: scale(0.2);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.7);
+        opacity: 0;
+    }
+}
+
+.atk-hit-spark {
+    position: fixed;
+    border-radius: 50%;
+    z-index: 336;
+    animation: atk-ember-fly 0.6s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes atk-ember-fly {
+    0% {
+        transform: translate(0, 0);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--sx, 0), var(--sy, 0));
+        opacity: 0;
+    }
+}
+
+.atk-hit-smoke {
+    position: fixed;
+    border-radius: 50% 50% 35% 35%;
+    z-index: 335;
+    animation: atk-smoke-drift 0.7s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes atk-smoke-drift {
+    0% {
+        transform: translate(0, 0) scale(0.6);
+        opacity: 0.7;
+    }
+    100% {
+        transform: translate(var(--dx, 0), -46px) scale(1.6);
+        opacity: 0;
+    }
+}
+
+/* ── Miss splash ── */
+.atk-miss-column {
+    position: fixed;
+    border-radius: 44% 44% 0 0;
+    background: linear-gradient(to top, rgba(40, 120, 210, 0.55) 0%, rgba(90, 190, 255, 0.85) 100%);
+    z-index: 335;
+    animation: atk-water-splash-rise 0.5s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes atk-water-splash-rise {
+    0% {
+        transform: scaleY(0.2);
+        opacity: 0;
+        transform-origin: bottom;
+    }
+    40% {
+        opacity: 1;
+    }
+    100% {
+        transform: scaleY(1);
+        opacity: 0.7;
+        transform-origin: bottom;
+    }
+}
+
+.atk-miss-ring {
+    position: fixed;
+    border-radius: 50%;
+    border: 2.5px solid rgba(70, 150, 220, 0.62);
+    z-index: 334;
+    animation: atk-water-ripple-ring 0.6s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes atk-water-ripple-ring {
+    0% {
+        transform: scale(0.4);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1.15);
+        opacity: 0;
+    }
+}
+
+.atk-miss-drop {
+    position: fixed;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(90, 175, 240, 0.88);
+    z-index: 335;
+    animation: atk-drop-arc 0.65s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes atk-drop-arc {
+    0% {
+        transform: translate(0, 0);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--dx, 0), var(--dy, 0));
+        opacity: 0;
+    }
+}
+
+/* ── Result text slam ── */
+.atk-result-text {
+    position: fixed;
+    top: 34%;
+    left: 50%;
+    z-index: 340;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(38px, 6vw, 58px);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    animation: atk-result-slam 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    pointer-events: none;
+}
+
+@keyframes atk-result-slam {
+    0% {
+        transform: translateX(-50%) scale(0.3);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(-50%) scale(1);
+        opacity: 1;
+    }
+}
+
+/* ── Ship-sunk scene ── */
+.atk-sunk-scene {
+    position: fixed;
+    bottom: 18%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 341;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.atk-sunk-ship-wrap {
+    animation: atk-ship-sink-tilt 2.1s 0.25s ease-in both;
+}
+
+@keyframes atk-ship-sink-tilt {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+    }
+    60% {
+        transform: translateY(10px) rotate(-4deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(46px) rotate(-9deg);
+        opacity: 0;
+    }
+}
+
+.atk-sunk-caption {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(11px, 1.4vw, 13px);
+    letter-spacing: 0.2em;
+    text-align: center;
+    text-transform: uppercase;
+    color: var(--color-primary);
+    text-shadow: 0 0 18px rgba(201, 151, 42, 0.5);
+    animation: fade-up 0.5s 0.35s ease-out both;
+}

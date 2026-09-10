@@ -10,10 +10,6 @@
 
             <div class="legend-items">
                 <div class="legend-item">
-                    <span class="legend-icon legend-difficulty">3</span>
-                    <span>Task difficulty rating</span>
-                </div>
-                <div class="legend-item">
                     <span class="legend-icon">
                         <span class="legend-progress-track"><span class="legend-progress-fill"></span></span>
                     </span>
@@ -34,12 +30,6 @@
                 <div class="legend-item">
                     <span class="legend-icon"><span class="legend-miss-dot"></span></span>
                     <span>A shot you fired here missed</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-icon">
-                        <span class="legend-hp-track"><span class="legend-hp-fill"></span></span>
-                    </span>
-                    <span>Ship health — green healthy, orange damaged, red critical, "Sunk" destroyed</span>
                 </div>
                 <div class="legend-item">
                     <span class="legend-icon legend-unknown">?</span>

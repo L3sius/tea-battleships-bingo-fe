@@ -1,0 +1,44 @@
+.mobile-nav {
+    display: none;
+}
+
+@media (max-width: 860px) {
+    .mobile-nav {
+        display: flex;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 150;
+        background: var(--color-bg-alt);
+        border-top: 1px solid var(--color-border);
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+}
+
+.mobile-nav-link {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 0 6px;
+    text-decoration: none;
+    color: var(--color-muted);
+    font-family: var(--font-sans);
+}
+
+.mobile-nav-link.active {
+    color: var(--color-primary);
+}
+
+.mobile-nav-icon {
+    font-size: 17px;
+    line-height: 1;
+}
+
+.mobile-nav-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}

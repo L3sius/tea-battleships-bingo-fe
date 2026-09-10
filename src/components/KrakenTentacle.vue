@@ -6,10 +6,8 @@
         <img src="/images/kraken.png" class="kraken-sprite" alt="" />
     </div>
 
-    <div v-if="burst" class="kraken-burst" :class="[burst, { fading: fadingOut }]" :style="anchorStyle">
-        <div class="burst-flash"></div>
-        <div class="burst-ring"></div>
-    </div>
+    <AttackImpact v-if="burst && targetPos" :x="targetPos.x" :y="targetPos.y" :result="burst"
+        :attacker-color="attackerColor" :defender-name="defenderName" @done="emit('done')" />
 </template>
 
 <script setup lang="ts">
@@ -17,11 +15,15 @@ import '@/assets/krakenTentacle.css'
 import { ref, onMounted, watch } from 'vue'
 import type { ShotResult } from '@/api/types'
 import { playSound } from '@/utils/sound'
+import AttackImpact from './AttackImpact.vue'
 
 const props = defineProps<{
     targetEl: HTMLElement
     /** null while the real shot is still in flight over the network */
     result: ShotResult | null
+    attackerColor: string
+    /** Only known once the fire response has come back; null until then. */
+    defenderName: string | null
 }>()
 
 const emit = defineEmits<{ done: []; burst: [] }>()
@@ -40,13 +42,12 @@ const VOICE_DURATION = 1680
 const RISE_DURATION = 320
 const HOLD_DURATION = 1800
 const TELEGRAPH_DURATION = VOICE_DURATION - RISE_DURATION
-const RECEDE_DURATION = 400
 
 const anchorStyle = ref<Record<string, string>>({})
 const tentacleAnchorStyle = ref<Record<string, string>>({})
+const targetPos = ref<{ x: number; y: number } | null>(null)
 const phase = ref<'telegraph' | 'rising' | 'receding'>('telegraph')
 const burst = ref<ShotResult | null>(null)
-const fadingOut = ref(false)
 let arrived = false
 
 onMounted(() => {
@@ -56,6 +57,7 @@ onMounted(() => {
 
     anchorStyle.value = { left: `${targetX}px`, top: `${targetY}px` }
     tentacleAnchorStyle.value = { left: `${targetX}px`, top: `${targetY}px` }
+    targetPos.value = { x: targetX, y: targetY }
 
     playSound('/sounds/kraken.m4a')
 
@@ -70,7 +72,10 @@ onMounted(() => {
 
 // The rise's duration is fixed and cosmetic; the real result can arrive
 // before or after it lands. Only reveal once BOTH the tentacle has visually
-// burst out AND the real network result is known.
+// burst out AND the real network result is known. AttackImpact (mounted
+// alongside the burst) now owns the actual hit/miss/sunk reveal and the
+// eventual 'done' — the tentacle just recedes back into the water on its
+// own timing underneath it.
 watch(() => props.result, maybeShowBurst)
 
 function maybeShowBurst() {
@@ -78,7 +83,5 @@ function maybeShowBurst() {
     burst.value = props.result
     emit('burst')
     phase.value = 'receding'
-    setTimeout(() => (fadingOut.value = true), RECEDE_DURATION - 100)
-    setTimeout(() => emit('done'), RECEDE_DURATION + 150)
 }
 </script>

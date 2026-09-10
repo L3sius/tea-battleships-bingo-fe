@@ -5,18 +5,19 @@
         </div>
 
         <div class="game-layout">
-            <LiveFeed class="layout-left" :messages="liveMessages" />
+            <LiveFeed class="layout-left" :messages="liveMessages" :connected="connected" />
 
             <div class="layout-center">
-                <BattleshipBoard :team-id="selectedTeam" :board="board" :shots="shots"
+                <BattleshipBoard :team-id="selectedTeam" :teams="teams" :board="board" :shots="shots"
                     :show-test-ships="showTestShips" :force-attack-type="forceAttackType"
                     :on-fire="handleFireRequest" @fire-result="handleFireResult" @fire-error="handleFireError" />
-                <TeamSelection v-if="teams.length" v-model="selectedTeam" :teams="teams" />
+                <Legend />
             </div>
 
             <div class="layout-right">
-                <TeamShipStatus :teams="teams" :ship-status-teams="shipStatusTeams" :shots="shots" />
-                <HiddenChallenges :tasks="bonusTasks" />
+                <TeamShipStatus :teams="teams" :ship-status-teams="shipStatusTeams" :shots="shots"
+                    v-model:selected-team-id="selectedTeam" />
+                <HiddenChallenges class="layout-right-challenges" :tasks="bonusTasks" />
             </div>
         </div>
 
@@ -30,9 +31,14 @@
                 :class="{ active: forceAttackType === opt }" @click="forceAttackType = opt">
                 {{ opt ?? 'random' }}
             </button>
-        </div>
 
-        <Legend />
+            <span class="dev-attack-divider" aria-hidden="true"></span>
+
+            <label class="dev-attack-label" for="dev-volume">Volume</label>
+            <input id="dev-volume" class="dev-attack-volume" type="range" min="0" max="100" step="5"
+                v-model.number="volumePct" />
+            <span class="dev-attack-volume-value">{{ volumePct }}%</span>
+        </div>
     </div>
 </template>
 
@@ -43,12 +49,12 @@ import LiveFeed from '@/components/LiveFeed.vue'
 import BattleshipBoard from '@/components/BattleshipBoard.vue'
 import TeamShipStatus from '@/components/TeamShipStatus.vue'
 import HiddenChallenges from '@/components/HiddenChallenges.vue'
-import TeamSelection from '@/components/TeamSelection.vue'
 import Legend from '@/components/Legend.vue'
 import { useGameData } from '@/composables/useGameData'
+import { getMasterVolume, setMasterVolume } from '@/utils/sound'
 import type { FireResponse } from '@/api/types'
 
-const { teams, board, shipStatusTeams, bonusTasks, shots, liveMessages, errorMessage, fireAt } = useGameData()
+const { teams, board, shipStatusTeams, bonusTasks, shots, liveMessages, errorMessage, connected, fireAt } = useGameData()
 
 const isDev = import.meta.env.DEV
 const showTestShips = ref(false)
@@ -60,17 +66,45 @@ const showTestShips = ref(false)
 const attackStyleOptions = [null, 'cannon', 'nuke', 'laser', 'kraken', 'storm'] as const
 const forceAttackType = ref<'cannon' | 'nuke' | 'laser' | 'kraken' | 'storm' | null>(null)
 
-const selectedTeam = ref<number | null>(null)
+// Dev-only master volume for all attack SFX; persisted via setMasterVolume.
+const volumePct = ref(Math.round(getMasterVolume() * 100))
+watch(volumePct, (pct) => setMasterVolume(pct / 100))
 
+// The board you're viewing is remembered across refreshes.
+const STORED_TEAM_KEY = 'bb:selected-team'
+
+function readStoredTeam(): number | null {
+    try {
+        const raw = localStorage.getItem(STORED_TEAM_KEY)
+        const n = raw === null ? NaN : Number(raw)
+        return Number.isInteger(n) ? n : null
+    } catch {
+        return null
+    }
+}
+
+const selectedTeam = ref<number | null>(readStoredTeam())
+
+// Once teams load, keep a cached selection if it's still a real team; otherwise
+// fall back to the first team.
 watch(
     teams,
     (list) => {
-        if (selectedTeam.value === null && list.length > 0) {
-            selectedTeam.value = list[0]!.id
-        }
+        if (!list.length) return
+        const stillValid = selectedTeam.value !== null && list.some((t) => t.id === selectedTeam.value)
+        if (!stillValid) selectedTeam.value = list[0]!.id
     },
     { immediate: true },
 )
+
+watch(selectedTeam, (id) => {
+    try {
+        if (id === null) localStorage.removeItem(STORED_TEAM_KEY)
+        else localStorage.setItem(STORED_TEAM_KEY, String(id))
+    } catch {
+        // best-effort — a blocked localStorage just means no persistence
+    }
+})
 
 const toast = ref<{ message: string; kind: 'success' | 'error' } | null>(null)
 let toastTimer: ReturnType<typeof setTimeout> | undefined

@@ -1,54 +1,284 @@
-.hidden-challenges {
-    width: 100%;
-    box-sizing: border-box;
-    flex-shrink: 0;
-    padding: 16px 20px;
+.hidden-challenges-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
 }
 
-.hidden-challenges .panel-title {
-    font-size: clamp(20px, 2.6vh, 28px);
-    margin-bottom: 12px;
+/* Compact (home) view: line the panel up with the Fleets card above it, which
+   sits inside 16px of padding. */
+.hidden-challenges:not(.full) {
+    padding: 0 16px;
+}
+
+.hidden-challenges-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-primary);
+    font-size: 14px;
+    margin: 0;
+}
+
+.hidden-challenges-title.compact {
+    font-size: 11px;
+}
+
+.hidden-challenges-rule {
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+}
+
+.hidden-challenges-count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-muted-dim);
 }
 
 .challenges-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    gap: 8px;
 }
 
-.challenge-tile {
-    height: clamp(42px, 6vh, 64px);
+/* Compact (home) view: five square tiles filling the panel width in one row,
+   which lands each one at roughly a board-cell size. */
+.challenges-grid:not(.full) {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.challenges-grid.full {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+@media (min-width: 640px) {
+    .challenges-grid.full {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.challenge-card {
+    position: relative;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 10px;
+    min-height: 84px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.challenges-grid:not(.full) .challenge-card {
+    min-height: 0;
+    aspect-ratio: 1;
+    padding: 6px;
+    gap: 3px;
+    overflow: hidden;
+}
+
+.challenges-grid.full .challenge-card {
+    min-height: 120px;
+    padding: 14px;
+}
+
+.challenge-card.revealed,
+.challenge-card.completed {
+    cursor: pointer;
+}
+
+.challenge-card.revealed:hover,
+.challenge-card.completed:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-primary-soft);
+}
+
+.challenge-status-pill {
+    align-self: flex-start;
+    font-family: var(--font-display);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    border-radius: 999px;
+}
+
+.challenge-status-pill.locked {
+    color: var(--color-muted-dim);
+    background: rgba(69, 96, 128, 0.12);
+    border: 1px solid var(--color-border);
+}
+
+.challenge-status-pill.revealed {
+    color: var(--color-progress);
+    background: rgba(74, 154, 74, 0.12);
+    border: 1px solid rgba(74, 154, 74, 0.3);
+}
+
+.challenge-status-pill.completed {
+    color: var(--color-complete);
+    background: rgba(93, 207, 184, 0.12);
+    border: 1px solid rgba(93, 207, 184, 0.3);
+}
+
+.challenge-locked {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 4px 6px;
-    background: linear-gradient(180deg, #2a2018 0%, #17110b 100%);
-    border: 2px solid #6b4f34;
-    border-radius: 6px;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
-    overflow: hidden;
-}
-
-.challenge-tile.revealed {
-    border-color: #e8b95f;
-    cursor: help;
 }
 
 .challenge-unknown {
-    font-family: 'Girassol';
-    font-size: clamp(22px, 3vh, 32px);
-    color: #7a6650;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 22px;
+    color: var(--color-border);
+}
+
+.challenge-revealed {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
 }
 
 .challenge-title {
-    font-family: 'Inter';
-    font-weight: 700;
-    font-size: clamp(10px, 1.4vh, 12px);
-    color: #e8b95f;
-    text-align: center;
-    line-height: 1.2;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--color-fg);
+    line-height: 1.25;
+}
+
+.challenge-caption {
+    font-size: 11px;
+    color: var(--color-fg-dim);
+    line-height: 1.3;
+}
+
+.challenge-completed-by {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--color-muted);
+}
+
+.challenge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-complete);
+    flex-shrink: 0;
+}
+
+.challenge-cb-names {
+    min-width: 0;
+}
+
+/* Compact (home) tiles carry just status + title + who completed it — no
+   caption. Keep the title and name lines from overflowing the small square. */
+.challenges-grid:not(.full) .challenge-title {
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+.challenges-grid:not(.full) .challenge-completed-by {
+    overflow: hidden;
+}
+
+.challenges-grid:not(.full) .challenge-cb-names {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.challenge-detail-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(4, 8, 14, 0.82);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.challenge-detail {
+    width: min(440px, 92vw);
+    max-height: 80vh;
+    overflow-y: auto;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    animation: fade-up 0.2s ease-out;
+}
+
+.challenge-detail-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.challenge-detail-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--color-fg);
+    margin: 0 0 6px 0;
+}
+
+.challenge-detail-close {
+    background: none;
+    border: none;
+    color: var(--color-muted);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.challenge-detail-close:hover {
+    color: var(--color-fg);
+}
+
+.challenge-detail-caption {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin: 0;
+}
+
+.challenge-detail-description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-fg-dim);
+    margin: 0;
+}
+
+.challenge-detail-label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-muted);
+    margin-bottom: 4px;
+}
+
+.challenge-detail-completion {
+    font-size: 13px;
+    color: var(--color-fg-dim);
+}
+
+.challenge-detail-team {
+    color: var(--color-muted);
 }

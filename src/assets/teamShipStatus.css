@@ -1,131 +1,184 @@
 .ship-status {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 14px 16px;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    gap: 6px;
-}
-
-.ship-status .panel-title {
-    font-size: clamp(20px, 2.6vh, 28px);
-    margin-bottom: 10px;
-}
-
-.ship-status-team {
-    margin-bottom: 6px;
-}
-
-.ship-status-team:last-child {
-    margin-bottom: 0;
-}
-
-.ship-status-team-header {
-    display: flex;
-    align-items: center;
     gap: 10px;
-    margin-bottom: 8px;
+    padding: 14px 16px;
 }
 
-.team-name {
-    font-family: 'Girassol';
-    font-size: clamp(18px, 2.2vh, 22px);
-    text-transform: uppercase;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
+.ship-status-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.fleet-destroyed-badge {
-    font-family: 'Inter';
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #ff6b6b;
-    border: 1px solid #ff6b6b;
-    border-radius: 4px;
-    padding: 2px 6px;
+.ship-status-head .panel-title {
+    margin: 0;
+    font-size: 17px;
+}
+
+.ship-status-hint {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--color-muted-dim);
 }
 
 .ship-status-empty {
-    font-family: 'Inter';
-    font-size: 13px;
-    color: #a08a6f;
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--color-muted-dim);
     text-align: center;
-    padding: 12px 0;
+    padding: 20px 0;
 }
 
-.ship-status-shots {
-    font-family: 'Inter';
-    font-size: clamp(11px, 1.6vh, 13px);
-    color: #a08a6f;
-    margin-bottom: 6px;
+/* Each card doubles as the team picker — click to view that fleet's board.
+   Inactive cards sit dimmed so the active one clearly reads as selected. */
+.ship-status-card {
+    display: block;
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    border: 1px solid color-mix(in srgb, var(--team-color) 30%, transparent);
+    background: color-mix(in srgb, var(--team-color) 3%, var(--color-bg-alt));
+    border-radius: var(--radius);
+    overflow: hidden;
+    opacity: 0.6;
+    cursor: pointer;
+    transition: opacity 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.ship-status-shots strong {
-    color: #e5e5e5;
+.ship-status-card:hover {
+    opacity: 0.82;
 }
 
-.ship-status-table {
+.ship-status-card.active {
+    opacity: 1;
+    border-color: color-mix(in srgb, var(--team-color) 65%, transparent);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--team-color) 22%, transparent);
+}
+
+.ship-status-card:focus-visible {
+    outline: 2px solid var(--team-color);
+    outline-offset: 2px;
+}
+
+.ship-status-active-badge {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-bg);
+    background: var(--team-color);
+    border-radius: 999px;
+    padding: 2px 7px;
+}
+
+.ship-status-card-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 9px 14px;
+    border-bottom: 1px solid color-mix(in srgb, var(--team-color) 25%, transparent);
+}
+
+.ship-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--team-color);
+    flex-shrink: 0;
+}
+
+.ship-status-team-name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--team-color);
+    flex: 1;
+}
+
+.fleet-destroyed-badge {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--color-hit);
+    border: 1px solid var(--color-hit);
+    border-radius: var(--radius);
+    padding: 2px 6px;
+}
+
+.ship-status-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--color-border);
+}
+
+.ship-status-stat {
+    background: var(--color-card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 0;
+    gap: 2px;
+}
+
+.ship-status-stat-value {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 21px;
+    color: var(--team-color);
+}
+
+.ship-status-stat-label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--color-muted);
+}
+
+.ship-status-ships {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    padding: 9px 14px;
 }
 
 .ship-status-row {
-    display: grid;
-    grid-template-columns: 1fr auto;
+    display: flex;
     align-items: center;
-    gap: 8px;
-    font-family: 'Inter';
-    font-size: clamp(11px, 1.7vh, 14px);
-    color: #e5e5e5;
-}
-
-.ship-status-row-head {
-    color: #a08a6f;
-    text-transform: uppercase;
-    font-size: clamp(9px, 1.4vh, 12px);
-    font-weight: 700;
-    grid-template-columns: 1fr auto;
-}
-
-.ship-status-row.sunk {
-    opacity: 0.55;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    justify-content: space-between;
 }
 
 .ship-name {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 18px;
+    color: var(--color-fg-dim);
 }
 
 .ship-status-row.sunk .ship-name {
+    color: var(--color-muted);
     text-decoration: line-through;
 }
 
 .ship-state-badge {
-    justify-self: end;
-    padding: 2px 10px;
-    border-radius: 999px;
-    font-size: clamp(9px, 1.4vh, 11px);
+    font-family: var(--font-mono);
+    font-size: 14px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
-    background: rgba(92, 184, 92, 0.18);
-    border: 1px solid #5cb85c;
-    color: #8fd98f;
+    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(74, 154, 74, 0.14);
+    border: 1px solid rgba(74, 154, 74, 0.35);
+    color: var(--color-progress);
 }
 
 .ship-state-badge.sunk {
-    background: rgba(214, 69, 69, 0.18);
-    border: 1px solid #d64545;
-    color: #ff9c9c;
-}
-
-.ship-status-logo {
-    flex: 1;
-    min-height: 0;
-    width: 100%;
-    object-fit: contain;
-    margin-top: 8px;
+    background: rgba(139, 0, 0, 0.16);
+    border-color: rgba(139, 0, 0, 0.4);
+    color: #ff8080;
 }

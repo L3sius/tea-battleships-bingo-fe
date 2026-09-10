@@ -1,4 +1,7 @@
-.storm-clouds {
+/* A small storm cell hovering just above the target tile — compact by
+   design, so the attack reads as hitting one tile rather than the whole
+   board (see CELL_GAP in StormStrike.vue). */
+.storm-cell {
     position: fixed;
     top: 0;
     left: 0;
@@ -8,15 +11,15 @@
     pointer-events: none;
     opacity: 0;
     transform: scale(0.7);
-    transform-origin: top center;
-    animation: storm-clouds-fade-in 1500ms ease-out forwards;
+    transform-origin: bottom center;
+    animation: storm-cell-fade-in 1500ms ease-out forwards;
 }
 
-.storm-clouds.fading {
-    animation: storm-clouds-fade-out 350ms ease-in forwards;
+.storm-cell.fading {
+    animation: storm-cell-fade-out 350ms ease-in forwards;
 }
 
-@keyframes storm-clouds-fade-in {
+@keyframes storm-cell-fade-in {
     0% {
         opacity: 0;
         transform: scale(0.7);
@@ -30,7 +33,7 @@
     }
 }
 
-@keyframes storm-clouds-fade-out {
+@keyframes storm-cell-fade-out {
     from {
         opacity: 1;
     }
@@ -39,56 +42,56 @@
     }
 }
 
-.storm-cloud-puff {
+.storm-cell-puff {
     position: absolute;
     border-radius: 50%;
     background: radial-gradient(circle at 35% 35%, #4a4a54 0%, #26262e 70%, transparent 100%);
-    filter: blur(3px);
+    filter: blur(2px);
 }
 
-.storm-cloud-puff.p1 {
-    left: -150px;
-    top: -20px;
-    width: 140px;
-    height: 90px;
+.storm-cell-puff.p1 {
+    left: -65px;
+    top: -14px;
+    width: 64px;
+    height: 42px;
 }
 
-.storm-cloud-puff.p2 {
-    left: -70px;
-    top: -40px;
-    width: 170px;
-    height: 110px;
-}
-
-.storm-cloud-puff.p3 {
-    left: 20px;
-    top: -30px;
-    width: 160px;
-    height: 100px;
-}
-
-.storm-cloud-puff.p4 {
-    left: 100px;
-    top: -15px;
-    width: 130px;
-    height: 85px;
-}
-
-.storm-cloud-puff.p5 {
+.storm-cell-puff.p2 {
     left: -30px;
-    top: 10px;
-    width: 190px;
-    height: 70px;
+    top: -24px;
+    width: 76px;
+    height: 50px;
 }
 
-.storm-charge-glow {
+.storm-cell-puff.p3 {
+    left: 10px;
+    top: -18px;
+    width: 72px;
+    height: 46px;
+}
+
+.storm-cell-puff.p4 {
+    left: 44px;
+    top: -8px;
+    width: 58px;
+    height: 38px;
+}
+
+.storm-cell-puff.p5 {
+    left: -12px;
+    top: 6px;
+    width: 86px;
+    height: 32px;
+}
+
+.storm-cell-glow {
     position: absolute;
     left: 0;
-    top: 40px;
-    width: 60px;
-    height: 60px;
-    margin-left: -30px;
-    margin-top: -30px;
+    top: 12px;
+    width: 36px;
+    height: 36px;
+    margin-left: -18px;
+    margin-top: -18px;
     border-radius: 50%;
     background: radial-gradient(circle, #eaf2ff 0%, #9cc4ff 40%, transparent 75%);
     animation: storm-charge-flicker 300ms ease-in-out;
@@ -100,13 +103,13 @@
         opacity: 0;
     }
     30% {
-        opacity: 0.9;
+        opacity: 0.6;
     }
     55% {
-        opacity: 0.2;
+        opacity: 0.15;
     }
     75% {
-        opacity: 0.85;
+        opacity: 0.55;
     }
 }
 
@@ -114,9 +117,11 @@
     position: fixed;
     left: 0;
     top: 0;
-    width: 200px;
-    margin-left: -100px;
-    z-index: 236;
+    width: 90px;
+    margin-left: -45px;
+    /* Sits just below the storm cell (z-index 235) so the streaks read as
+       falling out from behind the cloud rather than in front of it. */
+    z-index: 234;
     pointer-events: none;
     opacity: 0;
     animation: storm-rain-fade-in 300ms ease-out forwards;
@@ -154,51 +159,39 @@
 }
 
 .storm-rain-column.c1 {
-    left: 4px;
+    left: 2px;
     animation-duration: 480ms;
     animation-delay: -80ms;
 }
 
 .storm-rain-column.c2 {
-    left: 28px;
+    left: 18px;
     animation-duration: 560ms;
     animation-delay: -260ms;
 }
 
 .storm-rain-column.c3 {
-    left: 54px;
+    left: 34px;
     animation-duration: 500ms;
     animation-delay: -10ms;
 }
 
 .storm-rain-column.c4 {
-    left: 80px;
+    left: 50px;
     animation-duration: 610ms;
     animation-delay: -390ms;
 }
 
 .storm-rain-column.c5 {
-    left: 104px;
+    left: 66px;
     animation-duration: 470ms;
     animation-delay: -150ms;
 }
 
 .storm-rain-column.c6 {
-    left: 128px;
+    left: 82px;
     animation-duration: 540ms;
     animation-delay: -60ms;
-}
-
-.storm-rain-column.c7 {
-    left: 154px;
-    animation-duration: 590ms;
-    animation-delay: -320ms;
-}
-
-.storm-rain-column.c8 {
-    left: 178px;
-    animation-duration: 520ms;
-    animation-delay: -430ms;
 }
 
 @keyframes storm-rain-col-fall {
@@ -230,9 +223,10 @@
 
 .storm-bolt-svg {
     position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 246;
+    /* Same trick as the rain (z-index 234): sits below the storm cell (235) so
+       the bolt reads as striking down from behind the cloud, not in front of
+       it. Above the rain so the strike still stands out through the streaks. */
+    z-index: 234;
     pointer-events: none;
 }
 
@@ -246,14 +240,14 @@
 
 .storm-bolt-glow {
     stroke: #bfe2ff;
-    stroke-width: 10;
+    stroke-width: 8;
     opacity: 0.5;
-    filter: blur(4px);
+    filter: blur(3px);
 }
 
 .storm-bolt-core {
     stroke: #ffffff;
-    stroke-width: 3;
+    stroke-width: 2.5;
 }
 
 @keyframes storm-bolt-flicker {
@@ -281,81 +275,5 @@
     }
 }
 
-.storm-burst {
-    position: fixed;
-    z-index: 260;
-    pointer-events: none;
-}
-
-.storm-burst .burst-flash {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 160px;
-    height: 160px;
-    margin-left: -80px;
-    margin-top: -80px;
-    border-radius: 50%;
-    background: radial-gradient(circle, #ffffff 0%, #cfeeff 30%, #6fb8ff 55%, transparent 75%);
-    animation: storm-burst-pop 0.45s ease-out forwards;
-}
-
-.storm-burst .burst-ring {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 44px;
-    height: 44px;
-    margin-left: -22px;
-    margin-top: -22px;
-    border-radius: 50%;
-    border: 7px solid rgba(150, 210, 255, 0.9);
-    animation: storm-ring-expand 0.5s ease-out forwards;
-}
-
-.storm-burst.hit .burst-flash,
-.storm-burst.sunk .burst-flash {
-    background: radial-gradient(circle, #ffffff 0%, #ffe39c 25%, #ff8c3d 55%, transparent 75%);
-}
-
-.storm-burst.sunk .burst-ring {
-    border-color: rgba(255, 140, 60, 0.9);
-}
-
-.storm-burst.miss .burst-flash {
-    background: radial-gradient(circle, #ffffff 0%, #cfeeff 30%, #5cb8ff 55%, transparent 75%);
-}
-
-.storm-burst.miss .burst-ring {
-    border-color: rgba(120, 200, 255, 0.85);
-}
-
-.storm-burst.fading .burst-flash,
-.storm-burst.fading .burst-ring {
-    transition: opacity 0.3s ease;
-    opacity: 0 !important;
-}
-
-@keyframes storm-burst-pop {
-    0% {
-        transform: scale(0.2);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(1.6);
-        opacity: 0;
-    }
-}
-
-@keyframes storm-ring-expand {
-    0% {
-        transform: scale(0.5);
-        opacity: 0.9;
-        border-width: 9px;
-    }
-    100% {
-        transform: scale(6);
-        opacity: 0;
-        border-width: 1px;
-    }
-}
+/* Hit/miss/sunk impact is shared across every attack style now — see
+   attackImpact.css / AttackImpact.vue. */

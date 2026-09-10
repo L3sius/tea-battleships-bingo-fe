@@ -12,7 +12,8 @@
     pointer-events: none;
     transform: scale(0.1);
     opacity: 0;
-    animation: nuke-shadow-grow 1300ms ease-in 2100ms forwards;
+    /* delay = countdown length, duration = fall length (see nuke.m4a timing) */
+    animation: nuke-shadow-grow 4280ms ease-in 3230ms forwards;
 }
 
 @keyframes nuke-shadow-grow {
@@ -54,18 +55,21 @@
     top: 38%;
     transform: translate(-50%, -50%);
     z-index: 400;
-    font-family: 'Girassol';
+    font-family: var(--font-display);
     font-size: 180px;
     font-weight: 900;
     color: #ff4d2e;
     text-shadow: 0 0 40px rgba(255, 80, 30, 0.9), 0 0 80px rgba(255, 40, 20, 0.5), 0 4px 10px rgba(0, 0, 0, 0.8);
     pointer-events: none;
-    animation: nuke-countdown-pop 450ms ease-out;
+    /* Each number holds ~1.08s (3.23s / 3); a snap-in then a slow settle so it
+       doesn't sit dead-still while the voice counts. */
+    animation: nuke-countdown-pop 420ms cubic-bezier(0.2, 1.5, 0.4, 1),
+        nuke-countdown-settle 900ms ease-out 420ms both;
 }
 
 @keyframes nuke-countdown-pop {
     0% {
-        transform: translate(-50%, -50%) scale(1.8);
+        transform: translate(-50%, -50%) scale(1.9);
         opacity: 0;
     }
     30% {
@@ -74,6 +78,17 @@
     100% {
         transform: translate(-50%, -50%) scale(1);
         opacity: 1;
+    }
+}
+
+@keyframes nuke-countdown-settle {
+    from {
+        transform: translate(-50%, -50%) scale(1);
+        filter: brightness(1.15);
+    }
+    to {
+        transform: translate(-50%, -50%) scale(0.94);
+        filter: brightness(0.8);
     }
 }
 
@@ -106,7 +121,7 @@
     margin-top: -40px;
     border-radius: 50%;
     border: 12px solid rgba(255, 200, 90, 0.85);
-    animation: nuke-shock-expand 0.9s ease-out forwards;
+    animation: nuke-shock-expand 1.2s ease-out forwards;
 }
 
 .mushroom-stem {
@@ -121,7 +136,7 @@
     background: linear-gradient(0deg, #5a4632 0%, #8a7355 40%, #d99a4e 70%, #ff8c3d 100%);
     border-radius: 40% 40% 10% 10%;
     opacity: 0;
-    animation: nuke-stem-rise 0.9s ease-out forwards;
+    animation: nuke-stem-rise 1.5s ease-out forwards;
 }
 
 .mushroom-cap {
@@ -136,7 +151,7 @@
     background: radial-gradient(circle at 50% 40%, #ffb35c 0%, #c47a3a 40%, #5a3d24 72%, transparent 88%);
     opacity: 0;
     transform: scale(0.3);
-    animation: nuke-cap-bloom 1s ease-out 0.25s forwards;
+    animation: nuke-cap-bloom 2.1s ease-out 0.35s forwards;
 }
 
 .nuke-boom.fading .mushroom-stem,
@@ -201,14 +216,18 @@
 
 @keyframes nuke-cap-bloom {
     0% {
-        transform: scale(0.3);
+        transform: translateY(0) scale(0.3);
         opacity: 0;
     }
-    40% {
+    30% {
         opacity: 1;
     }
+    60% {
+        transform: translateY(-6px) scale(1);
+        opacity: 0.95;
+    }
     100% {
-        transform: scale(1);
-        opacity: 0.85;
+        transform: translateY(-18px) scale(1.12);
+        opacity: 0.8;
     }
 }
