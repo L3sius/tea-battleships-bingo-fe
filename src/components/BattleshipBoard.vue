@@ -16,18 +16,23 @@
                         :class="tileClasses(tile)" :style="tileGridStyle(tile.coord)" :data-coord="tile.coord"
                         @click="onTileClick(tile)" @mouseenter="hoveredCoord = tile.coord"
                         @mouseleave="hoveredCoord = null">
-                        <img v-if="tile.task?.imageUrl && !isSunkCell(tile.coord)" class="tile-item-icon"
-                            :class="{ dimmed: tile.completed }" :src="localItemImagePath(tile.task.imageUrl) ?? tile.task.imageUrl"
-                            :alt="tile.task.name" @error="onImageError($event, tile.task.imageUrl)" />
+                        <!-- Cells under a revealed wreck show nothing but the hull art laid over them. -->
+                        <template v-if="!isSunkCell(tile.coord)">
+                            <img v-if="tile.task?.imageUrl" class="tile-item-icon" :class="{ dimmed: tile.completed }"
+                                :src="localItemImagePath(tile.task.imageUrl) ?? tile.task.imageUrl"
+                                :alt="tile.task.name" @error="onImageError($event, tile.task.imageUrl)" />
 
-                        <span v-if="!tile.completed && tile.target > 1 && tile.progress > 0" class="tile-progress-track">
-                            <span class="tile-progress-fill" :style="{ width: progressPercent(tile) + '%' }"></span>
-                        </span>
+                            <span v-if="!tile.completed && tile.target > 1 && tile.progress > 0"
+                                class="tile-progress-track">
+                                <span class="tile-progress-fill" :style="{ width: progressPercent(tile) + '%' }"></span>
+                            </span>
 
-                        <span v-if="tile.completed && !tile.fired" class="tile-fire-icon">⌖</span>
+                            <span v-if="tile.completed && !tile.fired" class="tile-fire-icon">⌖</span>
+                        </template>
 
-                        <span v-if="tile.fired && !isSunkCell(tile.coord) && !pendingReveal.has(tile.coord)"
-                            class="shot-marker" :class="outgoingClass(tile.coord)">
+                        <!-- The hit marker stays visible over a wreck, just dimmed so the hull reads through. -->
+                        <span v-if="tile.fired && !pendingReveal.has(tile.coord)" class="shot-marker"
+                            :class="[outgoingClass(tile.coord), { 'over-wreck': isSunkCell(tile.coord) }]">
                             {{ outgoingSymbol(tile.coord) }}
                         </span>
 
@@ -35,8 +40,11 @@
                     </div>
 
                     <div v-for="ship in sunkShips" :key="'sunk-' + ship.key" class="sunk-ship-reveal"
+                        :class="{ vertical: ship.orientation === 'vertical', 'has-img': ship.image }"
                         :style="sunkShipStyle(ship)" :title="`You sank the enemy ${capitalize(ship.key)}`">
-                        ☠ {{ capitalize(ship.key) }}
+                        <img v-if="ship.image" class="sunk-ship-img" :src="shipImageSrc(ship.image)"
+                            :alt="capitalize(ship.key)" @error="onShipImgError(ship.image)" />
+                        <template v-else>{{ capitalize(ship.key) }}</template>
                     </div>
 
                     <template v-for="shot in activeShots" :key="shot.id">
@@ -119,8 +127,9 @@
 <script setup lang="ts">
 import '@/assets/battleshipBoard.css'
 import { computed, ref, watch } from 'vue'
-import type { BoardTeam, BoardTile, FireResponse, GetBoardResponse, Shot, ShotResult, Team } from '@/api/types'
+import type { BoardTeam, BoardTile, FireResponse, GetBoardResponse, ShipStatusShip, Shot, ShotResult, Team } from '@/api/types'
 import type { ShotFiredSignal } from '@/composables/useGameData'
+import { reconstructSunkShips } from '@/utils/sunkFleet'
 import { parseCoord } from '@/utils/coord'
 import { generateFakeFleet, type FakeShipPlacement } from '@/utils/fakeFleet'
 import { localItemImagePath } from '@/utils/itemImage'
@@ -141,6 +150,8 @@ const props = defineProps<{
     forceAttackType?: 'cannon' | 'nuke' | 'laser' | 'kraken' | 'storm' | null
     /** Newest shot from the game stream — replays its animation for observers. */
     lastShotFired?: ShotFiredSignal | null
+    /** The OPPOSING team's fleet (from /getShipStatus) — hull lengths and art. */
+    enemyFleet?: ShipStatusShip[]
     /** Parent owns the actual API call (and the board/shots refetch it triggers). */
     onFire: (coord: string) => Promise<FireResponse>
 }>()
@@ -181,6 +192,9 @@ function tileGridStyle(coord: string) {
 }
 
 function tileClasses(tile: BoardTile) {
+    // A wreck covers its cells completely, so none of the task-state tints or
+    // the fireable ring should show around the hull.
+    if (isSunkCell(tile.coord)) return { 'sunk-cell': true }
     return {
         completed: tile.completed,
         fireable: tile.completed && !tile.fired,
@@ -212,51 +226,42 @@ function outgoingClass(coord: string) {
 }
 
 function outgoingSymbol(coord: string) {
-    const result = myShots.value.get(coord)?.result
-    if (result === 'miss') return ''
-    if (result === 'sunk') return '☠'
-    return '✕'
+    return myShots.value.get(coord)?.result === 'miss' ? '' : '✕'
 }
 
 // A ship you've fully sunk gets its real, exact shape revealed (the backend
 // only sends the cells once a ship is dead — see sunkShipCells). Every one of
 // those cells stops showing its own hit marker and gets covered by one shape
 // spanning the whole ship instead.
-interface SunkShip {
-    key: string
-    row: number
-    col: number
-    length: number
-    orientation: 'horizontal' | 'vertical'
+const failedShipImages = ref<Set<string>>(new Set())
+
+function shipImageSrc(name: string): string {
+    return /^(https?:)?\//.test(name) ? name : `/images/ships/${name}`
 }
 
-const sunkShips = computed<SunkShip[]>(() => {
-    const ships: SunkShip[] = []
-    for (const shot of props.shots) {
-        if (shot.attackerTeamId !== props.teamId || shot.result !== 'sunk' || !shot.sunkShipCells?.length) continue
-        // Same reveal-timing rule as the plain hit/miss marker: don't show the
-        // ship's real shape until the shot that sank it has finished animating.
-        if (pendingReveal.value.has(shot.coord)) continue
-        const cells = shot.sunkShipCells.map(parseCoord)
-        const rows = cells.map((c) => c.row)
-        const cols = cells.map((c) => c.col)
-        ships.push({
-            key: shot.sunkShipKey ?? 'ship',
-            row: Math.min(...rows),
-            col: Math.min(...cols),
-            length: cells.length,
-            orientation: new Set(rows).size === 1 ? 'horizontal' : 'vertical',
-        })
-    }
-    return ships
+function onShipImgError(name: string | null) {
+    if (name) failedShipImages.value = new Set(failedShipImages.value).add(name)
+}
+
+// This grid is a targeting view of the enemy's waters: the wrecks on it are the
+// enemy hulls THIS team destroyed, rebuilt from the cells this team landed hits
+// on. (Damage this team has taken lives on `tile.incoming` and belongs to the
+// enemy's own view — it is deliberately not drawn here.)
+const sunkShips = computed(() => {
+    if (props.teamId === null || !props.enemyFleet?.length) return []
+    const myDamage = props.shots
+        .filter((s) => s.attackerTeamId === props.teamId && s.result !== 'miss')
+        .map((s) => ({ coord: s.coord, sunkShipKey: s.sunkShipKey }))
+    return reconstructSunkShips(myDamage, props.enemyFleet, gridSize.value, pendingReveal.value).map((ship) => ({
+        ...ship,
+        image: ship.image && !failedShipImages.value.has(ship.image) ? ship.image : null,
+    }))
 })
 
 const sunkCellCoords = computed(() => {
     const coords = new Set<string>()
-    for (const shot of props.shots) {
-        if (shot.attackerTeamId === props.teamId && shot.result === 'sunk' && !pendingReveal.value.has(shot.coord)) {
-            for (const coord of shot.sunkShipCells ?? []) coords.add(coord)
-        }
+    for (const ship of sunkShips.value) {
+        for (const coord of ship.cells) coords.add(coord)
     }
     return coords
 })
@@ -265,7 +270,7 @@ function isSunkCell(coord: string) {
     return sunkCellCoords.value.has(coord)
 }
 
-function sunkShipStyle(ship: SunkShip) {
+function sunkShipStyle(ship: { row: number; col: number; length: number; orientation: 'horizontal' | 'vertical' }) {
     return {
         gridRow: `${ship.row + 1} / span ${ship.orientation === 'vertical' ? ship.length : 1}`,
         gridColumn: `${ship.col + 1} / span ${ship.orientation === 'horizontal' ? ship.length : 1}`,

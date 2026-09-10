@@ -88,6 +88,15 @@
     background: linear-gradient(145deg, #0a1420 0%, #060d16 100%);
 }
 
+/* Under a revealed wreck: no task tint, no fireable ring, and no internal grid
+   lines, so the hull reads as one object instead of a row of cells. */
+.battle-board-cell.sunk-cell,
+.battle-board-cell.sunk-cell:hover {
+    background: linear-gradient(145deg, #0a1420 0%, #060d16 100%);
+    border-color: transparent;
+    box-shadow: none;
+}
+
 .battle-board-placeholder {
     position: absolute;
     inset: 0;
@@ -174,10 +183,12 @@
 }
 
 @keyframes fire-icon-blink {
+
     0%,
     100% {
         opacity: 1;
     }
+
     50% {
         opacity: 0.3;
     }
@@ -193,18 +204,20 @@
     pointer-events: none;
 }
 
-.shot-marker.hit {
+/* The shot that finishes a hull looks like any other hit. The layered shadow —
+   a tight offset plus a soft halo — keeps the mark legible over busy hull art. */
+.shot-marker.hit,
+.shot-marker.sunk {
     color: var(--color-hit);
     font-size: calc(var(--cell) * 0.4);
     font-weight: 900;
-    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.85);
 }
 
-.shot-marker.sunk {
-    color: #ff8080;
-    font-size: calc(var(--cell) * 0.45);
-    font-weight: 900;
-    text-shadow: 0 0 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(139, 0, 0, 0.6);
+/* Over a revealed hull the marker sits above the art (which is z-index 3) at
+   full strength; the hull itself fades back instead. */
+.shot-marker.over-wreck {
+    z-index: 4;
 }
 
 .shot-marker.miss::before {
@@ -256,6 +269,35 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    container-type: size;
+}
+
+/* With hull art: drop the pill look, keep a faint wreck tint + glow. */
+.sunk-ship-reveal.has-img {
+    border-radius: var(--radius);
+    background: rgba(139, 0, 0, 0.14);
+    padding: 0;
+}
+
+/* Hull art is authored vertically (bow up), aspect 1 : length — which matches a
+   vertically-placed hull's box exactly. */
+.sunk-ship-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    opacity: 0.8;
+}
+
+/* A horizontally-placed hull's box is wide & short, so size the image to the
+   box's swapped axes and spin it a quarter turn. */
+.sunk-ship-reveal:not(.vertical) .sunk-ship-img {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 100cqh;
+    height: 100cqw;
+    transform: rotate(90deg);
 }
 
 /* ── Tile detail drawer ── */

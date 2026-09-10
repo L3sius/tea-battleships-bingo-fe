@@ -11,7 +11,7 @@
             <div class="layout-center">
                 <BattleshipBoard :team-id="selectedTeam" :teams="teams" :board="board" :shots="shots"
                     :show-test-ships="showTestShips" :force-attack-type="forceAttackType"
-                    :last-shot-fired="lastShotFired" :on-fire="handleFireRequest"
+                    :last-shot-fired="lastShotFired" :enemy-fleet="enemyFleet" :on-fire="handleFireRequest"
                     @fire-result="handleFireResult" @fire-error="handleFireError" />
                 <Legend />
             </div>
@@ -39,7 +39,7 @@
 
 <script setup lang="ts">
 import '@/assets/homeView.css'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import LiveFeed from '@/components/LiveFeed.vue'
 import BattleshipBoard from '@/components/BattleshipBoard.vue'
 import TeamShipStatus from '@/components/TeamShipStatus.vue'
@@ -50,6 +50,17 @@ import type { FireResponse } from '@/api/types'
 
 const { teams, board, shipStatusTeams, bonusTasks, shots, liveMessages, errorMessage, connected, lastShotFired, fireAt } =
     useGameData()
+
+// The board is a targeting view of the enemy's waters, so the hulls drawn on it
+// are the opponent's — their lengths and art come from the opponent's fleet.
+const enemyFleet = computed(() => {
+    if (selectedTeam.value === null) return []
+    const opponentId = shots.value.find((s) => s.attackerTeamId === selectedTeam.value)?.targetTeamId
+    const opponent =
+        shipStatusTeams.value.find((t) => t.teamId === opponentId) ??
+        shipStatusTeams.value.find((t) => t.teamId !== selectedTeam.value)
+    return opponent?.ships ?? []
+})
 
 const isDev = import.meta.env.DEV
 const showTestShips = ref(false)

@@ -65,6 +65,8 @@ export interface ShipStatusShip {
     length: number
     hits: number
     sunk: boolean
+    /** Art filename for this hull, from battleships.toml; omitted when unset. */
+    image?: string | null
 }
 
 export interface ShipStatusTeam {
@@ -105,8 +107,6 @@ export interface Shot {
     coord: string
     result: ShotResult
     sunkShipKey: string | null
-    /** Every cell of the ship, present only once it's fully sunk. */
-    sunkShipCells?: string[]
     firedBy: string | null
     firedAt: string
     /** Backend-chosen seed; every client resolves it to the same attack animation. */
