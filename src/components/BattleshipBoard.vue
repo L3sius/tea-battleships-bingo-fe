@@ -114,8 +114,10 @@
                 </div>
 
                 <div v-if="selectedTile.task" class="tile-modal-footer">
-                    <button v-if="canFire(selectedTile)" class="tile-modal-fire-btn" @click="fireSelectedTile">
-                        ⚓ Fire
+                    <button v-if="canFire(selectedTile)" class="tile-modal-fire-btn" :class="{ firing }"
+                        :disabled="firing" @click="fireSelectedTile">
+                        <span v-if="firing" class="tile-modal-fire-spinner" aria-hidden="true" />
+                        {{ firing ? 'Attack incoming…' : '⚓ Fire' }}
                     </button>
                     <button v-else class="tile-modal-cancel-btn tile-modal-close-btn" @click="closeModal">Close</button>
                 </div>
@@ -126,9 +128,9 @@
 
 <script setup lang="ts">
 import '@/assets/battleshipBoard.css'
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import type { BoardTeam, BoardTile, FireResponse, GetBoardResponse, ShipStatusShip, Shot, ShotResult, Team } from '@/api/types'
-import type { ShotFiredSignal } from '@/composables/useGameData'
+import { ATTACK_WARNING_MS, type ShotFiredSignal } from '@/composables/useGameData'
 import { reconstructSunkShips } from '@/utils/sunkFleet'
 import { parseCoord } from '@/utils/coord'
 import { generateFakeFleet, type FakeShipPlacement } from '@/utils/fakeFleet'
@@ -382,55 +384,62 @@ function spawnShot(
     return true
 }
 
+const firing = ref(false)
+let fireTimer: ReturnType<typeof setTimeout> | undefined
+// Fire responses parked until their (delayed) animation bursts, so the outcome
+// toast still lands in sync with the reveal rather than 9s early.
+const pendingFireResponses = new Map<string, FireResponse>()
+
 async function fireSelectedTile() {
-    if (!selectedTile.value || props.teamId == null) return
+    if (!selectedTile.value || props.teamId === null || firing.value) return
     const coord = selectedTile.value.coord
-    const teamId = props.teamId
-    selectedCoord.value = null
+    firing.value = true
     pendingReveal.value.add(coord)
 
     try {
-        const result = await props.onFire(coord)
-        const key = `${teamId}:${coord}`
-        const live = activeShots.value.find((s) => s.coord === coord && s.attackerTeamId === teamId)
-        if (live) {
-            // The shot_fired stream echo beat our HTTP response and already
-            // started the animation — just hand it the response for the toast.
-            live.fireResponse = result
-        } else if (!seenShots.has(key)) {
-            seenShots.add(key)
-            const attackType = props.forceAttackType ?? attackTypeForSeed(result.animationSeed)
-            if (!spawnShot(coord, teamId, result.result, attackType, result)) {
-                // No board tile to aim at — surface the outcome directly.
-                pendingReveal.value.delete(coord)
-                emit('fire-result', result)
-            }
-        }
+        pendingFireResponses.set(coord, await props.onFire(coord))
     } catch (err) {
+        firing.value = false
         pendingReveal.value.delete(coord)
         emit('fire-error', err)
+        return
     }
-}
 
-// Replay the animation for every other client viewing this team's board, using
-// the same seed so it matches what the firer saw.
-watch(
-    () => props.lastShotFired,
-    (evt) => {
-        if (!evt || props.teamId == null || evt.attackerTeamId !== props.teamId) return
-        const key = `${evt.attackerTeamId}:${evt.coord}`
-        if (seenShots.has(key)) return
-        seenShots.add(key)
-        const attackType = props.forceAttackType ?? attackTypeForSeed(evt.animationSeed)
-        spawnShot(evt.coord, evt.attackerTeamId, evt.result, attackType, null)
-    },
-)
+    // Hold the modal open with the button spinning for the warning window, so
+    // the firer sees the same countdown everyone else is getting.
+    fireTimer = setTimeout(() => {
+        firing.value = false
+        selectedCoord.value = null
+    }, ATTACK_WARNING_MS)
+}
 
 function onShotBurst(coord: string) {
     pendingReveal.value.delete(coord)
     const shot = activeShots.value.find((s) => s.coord === coord)
     if (shot?.fireResponse) emit('fire-result', shot.fireResponse)
 }
+
+// Fires once the warning window has closed (see useGameData.announceAttack), so
+// every client viewing this team's board animates the shot at the same moment.
+watch(
+    () => props.lastShotFired,
+    (evt) => {
+        if (!evt || props.teamId === null || evt.attackerTeamId !== props.teamId) return
+        const key = `${evt.attackerTeamId}:${evt.coord}`
+        if (seenShots.has(key)) return
+        seenShots.add(key)
+        const attackType = props.forceAttackType ?? attackTypeForSeed(evt.animationSeed)
+        const response = pendingFireResponses.get(evt.coord) ?? null
+        pendingFireResponses.delete(evt.coord)
+        if (!spawnShot(evt.coord, evt.attackerTeamId, evt.result, attackType, response)) {
+            // No tile to aim at — surface the outcome rather than swallowing it.
+            pendingReveal.value.delete(evt.coord)
+            if (response) emit('fire-result', response)
+        }
+    },
+)
+
+onUnmounted(() => clearTimeout(fireTimer))
 
 function onShotDone(id: number) {
     const shot = activeShots.value.find((s) => s.id === id)

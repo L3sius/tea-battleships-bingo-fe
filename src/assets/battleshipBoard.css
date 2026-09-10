@@ -519,3 +519,32 @@
 .tile-modal-fire-btn:hover {
     background: color-mix(in srgb, var(--color-primary) 85%, #fff);
 }
+/* Fire button during the attack-warning countdown. */
+.tile-modal-fire-btn.firing {
+    cursor: progress;
+    opacity: 0.85;
+}
+
+.tile-modal-fire-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 8px;
+    vertical-align: -2px;
+    border: 2px solid rgba(0, 0, 0, 0.25);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: fire-spinner 0.8s linear infinite;
+}
+
+@keyframes fire-spinner {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tile-modal-fire-spinner {
+        animation-duration: 2.4s;
+    }
+}

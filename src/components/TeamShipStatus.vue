@@ -14,6 +14,7 @@
                 <span class="ship-status-dot" />
                 <span class="ship-status-team-name">{{ team.teamName }}</span>
                 <span v-if="team.teamId === selectedTeamId" class="ship-status-active-badge">Active</span>
+                <span v-if="attackingTeams.has(team.teamId)" class="ship-status-incoming-badge">Attack incoming</span>
                 <span v-if="team.fleetDestroyed" class="fleet-destroyed-badge">Fleet Destroyed</span>
             </div>
 
@@ -46,7 +47,9 @@
 
 <script setup lang="ts">
 import '@/assets/teamShipStatus.css'
+import { computed } from 'vue'
 import type { Shot, ShipStatusTeam, Team } from '@/api/types'
+import type { PendingAttack } from '@/composables/useGameData'
 import { teamColor } from '@/utils/teamColors'
 
 const props = defineProps<{
@@ -55,7 +58,13 @@ const props = defineProps<{
     shots: Shot[]
     /** Which team's board is currently shown — the card for it reads "Active". */
     selectedTeamId: number | null
+    /** Shots mid-countdown; their attacker's card blinks so people can go watch. */
+    pendingAttacks?: PendingAttack[]
 }>()
+
+// The animation plays on the attacking team's board, so that is the card to
+// send people to while the countdown runs.
+const attackingTeams = computed(() => new Set((props.pendingAttacks ?? []).map((a) => a.attackerTeamId)))
 
 // Clicking a fleet card is how you pick which board to view now (the old
 // standalone TeamSelection bar was folded into this panel to save space).

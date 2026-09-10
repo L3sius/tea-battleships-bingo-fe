@@ -18,7 +18,7 @@
 
             <div class="layout-right">
                 <TeamShipStatus :teams="teams" :ship-status-teams="shipStatusTeams" :shots="shots"
-                    v-model:selected-team-id="selectedTeam" />
+                    :pending-attacks="pendingAttacks" v-model:selected-team-id="selectedTeam" />
                 <HiddenChallenges class="layout-right-challenges" :tasks="bonusTasks" />
             </div>
         </div>
@@ -48,7 +48,7 @@ import Legend from '@/components/Legend.vue'
 import { useGameData } from '@/composables/useGameData'
 import type { FireResponse } from '@/api/types'
 
-const { teams, board, shipStatusTeams, bonusTasks, shots, liveMessages, errorMessage, connected, lastShotFired, fireAt } =
+const { teams, board, shipStatusTeams, bonusTasks, shots, liveMessages, errorMessage, connected, lastShotFired, pendingAttacks, fireAt } =
     useGameData()
 
 // The board is a targeting view of the enemy's waters, so the hulls drawn on it

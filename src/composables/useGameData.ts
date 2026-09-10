@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import * as api from '@/api/client'
+import { playSound } from '@/utils/sound'
 import type {
     ActionMessage,
     BonusTask,
@@ -10,6 +11,21 @@ import type {
     ShotResult,
     Team,
 } from '@/api/types'
+
+/**
+ * How long every client holds a fired shot before showing it. The backend
+ * broadcasts shot_fired the moment /fire resolves, so this window starts at the
+ * same instant everywhere — giving people time to switch to the attacking
+ * team's board and watch it land.
+ */
+export const ATTACK_WARNING_MS = 9000
+
+/** A shot that has been fired but whose animation is still counting down. */
+export interface PendingAttack {
+    attackerTeamId: number
+    targetTeamId: number
+    coord: string
+}
 
 /** A shot someone (possibly another client) just fired, for replaying its animation. */
 export interface ShotFiredSignal {
@@ -29,13 +45,19 @@ const shots = ref<Shot[]>([])
 const liveMessages = ref<ActionMessage[]>([])
 const errorMessage = ref<string | null>(null)
 const connected = ref(false)
-// Reassigned on every shot_fired game event (from any client). Components watch
-// its identity to replay the attack animation in sync across all viewers.
+// Reassigned on every shot_fired game event (from any client), but only once the
+// warning window has elapsed. Components watch its identity to replay the attack
+// animation in sync across all viewers.
 const lastShotFired = ref<ShotFiredSignal | null>(null)
+// Shots inside their warning window right now — drives the blinking fleet card.
+const pendingAttacks = ref<PendingAttack[]>([])
 
 const MAX_LIVE_MESSAGES = 100
 
 let started = false
+// `${attackerTeamId}:${coord}` for shots already announced, so a shot never
+// opens two warning windows (a coord can only be fired once).
+const announced = new Set<string>()
 
 function reportError(err: unknown) {
     errorMessage.value = err instanceof Error ? err.message : String(err)
@@ -69,17 +91,14 @@ function handleGameEvent(evt: GameStreamEvent) {
             refreshBoard().catch(reportError)
             break
         case 'shot_fired':
-            lastShotFired.value = {
+            announceAttack({
                 attackerTeamId: evt.attackerTeamId,
                 targetTeamId: evt.targetTeamId,
                 coord: evt.coord,
                 result: evt.result,
                 sunkShipKey: evt.sunkShipKey,
                 animationSeed: evt.animationSeed,
-            }
-            refreshBoard().catch(reportError)
-            refreshShipStatus().catch(reportError)
-            refreshShots().catch(reportError)
+            })
             break
         case 'game_won':
             refreshBoard().catch(reportError)
@@ -90,6 +109,34 @@ function handleGameEvent(evt: GameStreamEvent) {
             refreshBonusBoard().catch(reportError)
             break
     }
+}
+
+/**
+ * Opens the warning window for a shot: siren + blinking card now, animation and
+ * refreshed board data once it closes. Refreshes are held back too — landing
+ * them early would pop the hit marker on the board before the shell arrives.
+ */
+function announceAttack(shot: ShotFiredSignal) {
+    const key = `${shot.attackerTeamId}:${shot.coord}`
+    if (announced.has(key)) return
+    announced.add(key)
+
+    pendingAttacks.value.push({
+        attackerTeamId: shot.attackerTeamId,
+        targetTeamId: shot.targetTeamId,
+        coord: shot.coord,
+    })
+    playSound('/sounds/attack_incoming.mp3')
+
+    setTimeout(() => {
+        pendingAttacks.value = pendingAttacks.value.filter(
+            (a) => !(a.attackerTeamId === shot.attackerTeamId && a.coord === shot.coord),
+        )
+        lastShotFired.value = shot
+        refreshBoard().catch(reportError)
+        refreshShipStatus().catch(reportError)
+        refreshShots().catch(reportError)
+    }, ATTACK_WARNING_MS)
 }
 
 // The /getActionStream frames don't quite match the rest of the API: the
@@ -148,9 +195,16 @@ function start() {
 async function fireAt(teamId: number, coord: string, firedBy?: string) {
     try {
         const result = await api.fire({ teamId, coord, firedBy })
-        // Refresh in the background so the caller can start the attack animation
-        // immediately; the shot_fired game event also triggers these refreshes.
-        Promise.all([refreshBoard(), refreshShipStatus(), refreshShots()]).catch(reportError)
+        // Open the window locally too, in case our own game stream is lagging —
+        // `announced` keeps this and the shot_fired echo from doubling up.
+        announceAttack({
+            attackerTeamId: result.attackerTeamId,
+            targetTeamId: result.targetTeamId,
+            coord: result.coord,
+            result: result.result,
+            sunkShipKey: result.sunkShipKey,
+            animationSeed: result.animationSeed,
+        })
         return result
     } catch (err) {
         reportError(err)
@@ -170,6 +224,7 @@ export function useGameData() {
         errorMessage,
         connected,
         lastShotFired,
+        pendingAttacks,
         fireAt,
         refreshBoard,
     }
