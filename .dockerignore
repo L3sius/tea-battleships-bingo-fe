@@ -1,0 +1,26 @@
+node_modules
+dist
+dist-ssr
+.git
+.gitignore
+.github
+*.log
+*.local
+*.tsbuildinfo
+
+# local env — the image gets VITE_API_BASE_URL from a build arg instead
+.env
+.env.*
+
+# editor / tooling
+.vscode
+.idea
+.prettierrc*
+.eslintcache
+
+# not needed in the image
+designs
+coverage
+README.md
+Dockerfile
+.dockerignore
