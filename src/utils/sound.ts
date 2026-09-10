@@ -27,11 +27,27 @@ function readStoredVolume(): number {
 // Persisted so the choice survives a reload, same as the selected team.
 const volume = ref(readStoredVolume())
 
+// Sounds still playing right now. An <audio> element's volume is a snapshot
+// taken when it starts, so without tracking them a change to the master volume
+// would only affect the *next* sound — leaving a 9s siren blaring after a mute.
+const playing = new Set<HTMLAudioElement>()
+
 watch(volume, (v) => {
     try {
         localStorage.setItem(VOLUME_KEY, String(v))
     } catch {
         // Persisting is best-effort only.
+    }
+    // Copy first: silencing a sound removes it from the set as we iterate.
+    for (const audio of [...playing]) {
+        if (v === 0) {
+            // Muting stops outright rather than playing on silently, matching
+            // playSound()'s refusal to start anything while muted.
+            audio.pause()
+            playing.delete(audio)
+        } else {
+            audio.volume = v
+        }
     }
 })
 
@@ -79,8 +95,19 @@ export function playSound(path: string) {
         if (volume.value === 0) return
         const audio = new Audio(path)
         audio.volume = volume.value
+        playing.add(audio)
+
+        const release = () => {
+            playing.delete(audio)
+            audio.removeEventListener('ended', release)
+            audio.removeEventListener('error', release)
+        }
+        audio.addEventListener('ended', release)
+        audio.addEventListener('error', release)
+
         audio.play().catch(() => {
             // Autoplay can still be refused in some contexts; ignore silently.
+            release()
         })
     } catch {
         // Ignore — construction itself can throw in unsupported environments.
