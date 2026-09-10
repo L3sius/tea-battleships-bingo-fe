@@ -32,13 +32,6 @@
                 :class="{ active: forceAttackType === opt }" @click="forceAttackType = opt">
                 {{ opt ?? 'random' }}
             </button>
-
-            <span class="dev-attack-divider" aria-hidden="true"></span>
-
-            <label class="dev-attack-label" for="dev-volume">Volume</label>
-            <input id="dev-volume" class="dev-attack-volume" type="range" min="0" max="100" step="5"
-                v-model.number="volumePct" />
-            <span class="dev-attack-volume-value">{{ volumePct }}%</span>
         </div>
     </div>
 </template>
@@ -52,7 +45,6 @@ import TeamShipStatus from '@/components/TeamShipStatus.vue'
 import HiddenChallenges from '@/components/HiddenChallenges.vue'
 import Legend from '@/components/Legend.vue'
 import { useGameData } from '@/composables/useGameData'
-import { getMasterVolume, setMasterVolume } from '@/utils/sound'
 import type { FireResponse } from '@/api/types'
 
 const { teams, board, shipStatusTeams, bonusTasks, shots, liveMessages, errorMessage, connected, fireAt } = useGameData()
@@ -66,10 +58,6 @@ const showTestShips = ref(false)
 // in the UI right now.
 const attackStyleOptions = [null, 'cannon', 'nuke', 'laser', 'kraken', 'storm'] as const
 const forceAttackType = ref<'cannon' | 'nuke' | 'laser' | 'kraken' | 'storm' | null>(null)
-
-// Dev-only master volume for all attack SFX; persisted via setMasterVolume.
-const volumePct = ref(Math.round(getMasterVolume() * 100))
-watch(volumePct, (pct) => setMasterVolume(pct / 100))
 
 // The board you're viewing is remembered across refreshes.
 const STORED_TEAM_KEY = 'bb:selected-team'

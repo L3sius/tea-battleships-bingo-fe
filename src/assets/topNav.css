@@ -19,6 +19,12 @@
     padding: 8px 0;
 }
 
+.top-nav-aside {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
 .top-nav-logo {
     display: block;
     height: clamp(34px, 4.4vw, 52px);
@@ -108,7 +114,7 @@
 
 @media (max-width: 640px) {
     .top-nav {
-        grid-template-columns: auto 1fr;
+        grid-template-columns: auto 1fr auto;
     }
 
     .top-nav-stats {

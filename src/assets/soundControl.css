@@ -1,0 +1,43 @@
+.sound-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sound-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: var(--radius);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--color-secondary);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.sound-btn:hover {
+    color: var(--color-fg);
+    background: var(--color-card);
+    border-color: var(--color-border);
+}
+
+.sound-btn.muted {
+    color: var(--color-hit);
+}
+
+.sound-slider {
+    width: 84px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+
+/* No room for the slider in a tight nav — the mute button stays. */
+@media (max-width: 760px) {
+    .sound-slider {
+        display: none;
+    }
+}

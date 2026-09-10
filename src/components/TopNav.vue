@@ -21,12 +21,17 @@
                 {{ section.label }}
             </RouterLink>
         </nav>
+
+        <div class="top-nav-aside">
+            <SoundControl />
+        </div>
     </header>
 </template>
 
 <script setup lang="ts">
 import '@/assets/topNav.css'
 import { RouterLink } from 'vue-router'
+import SoundControl from '@/components/SoundControl.vue'
 
 defineProps<{ tasksCompleted: number; attacksMade: number }>()
 
