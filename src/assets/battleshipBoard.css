@@ -52,9 +52,8 @@
 .battle-board-cell {
     position: relative;
     /* border-box so each cell fills its grid track exactly. Without this the
-       1px border pushes every cell 2px past its track, cells overlap, and the
-       grid's overflow:hidden clips the outer edge of the edge-most cells —
-       which was eating the fireable highlight on the board's outer rows/cols. */
+       1px border pushes every cell 2px past its track and neighbours overlap,
+       which ate the fireable highlight on the board's outer rows/cols. */
     box-sizing: border-box;
     width: var(--cell);
     height: var(--cell);
@@ -96,7 +95,6 @@
     border-color: transparent;
     box-shadow: none;
 }
-
 .battle-board-placeholder {
     position: absolute;
     inset: 0;
@@ -229,21 +227,50 @@
     border: 1.5px solid rgba(120, 180, 220, 0.7);
 }
 
-.tile-coord-tooltip {
-    position: absolute;
-    top: -22px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 20;
+/* Hover card for a tile: coord + task description. Teleported to <body> with
+   fixed positioning (see onTileHover), so the board's clipping and scroll
+   container can't cut it off. Sits under the tile drawer's backdrop (200).
+   onTileHover's HOVER_TIP_HALF_WIDTH mirrors half of max-width. */
+.tile-hover-tip {
+    position: fixed;
+    z-index: 150;
+    /* border-box, so max-width is the card's true outer width — the on-screen
+       clamping in onTileHover relies on it. */
+    box-sizing: border-box;
+    max-width: 260px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    padding: 8px 11px;
+    border-radius: var(--radius);
+    background: var(--color-bg-deep);
+    border: 1px solid rgba(201, 151, 42, 0.55);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+    transform: translate(-50%, -100%);
+}
+
+.tile-hover-tip.below {
+    transform: translate(-50%, 0);
+}
+
+.tile-hover-tip-coord {
+    align-self: center;
     font-family: var(--font-mono);
     font-weight: 700;
-    font-size: 10px;
-    padding: 2px 6px;
+    font-size: 11px;
+    padding: 1px 6px;
     border-radius: var(--radius);
     background: var(--color-primary);
     color: var(--color-bg);
-    white-space: nowrap;
-    pointer-events: none;
+}
+
+.tile-hover-tip-desc {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--color-fg);
 }
 
 .sunk-ship-reveal {
@@ -453,7 +480,7 @@
 }
 
 .tile-modal-description {
-    font-size: 13px;
+    font-size: 15px;
     line-height: 1.55;
     color: var(--color-fg-dim);
     margin: 0;

@@ -14,8 +14,8 @@
                 <template v-if="boardTeam">
                     <div v-for="tile in boardTeam.tiles" :key="tile.coord" class="battle-board-cell"
                         :class="tileClasses(tile)" :style="tileGridStyle(tile.coord)" :data-coord="tile.coord"
-                        @click="onTileClick(tile)" @mouseenter="hoveredCoord = tile.coord"
-                        @mouseleave="hoveredCoord = null">
+                        @click="onTileClick(tile)" @mouseenter="onTileHover($event, tile)"
+                        @mouseleave="clearHover">
                         <!-- Cells under a revealed wreck show nothing but the hull art laid over them. -->
                         <template v-if="!isSunkCell(tile.coord)">
                             <img v-if="tile.task?.imageUrl" class="tile-item-icon" :class="{ dimmed: tile.completed }"
@@ -30,13 +30,11 @@
                             <span v-if="tile.completed && !tile.fired" class="tile-fire-icon">⌖</span>
                         </template>
 
-                        <!-- The hit marker stays visible over a wreck, just dimmed so the hull reads through. -->
+                        <!-- The hit marker stays visible over a wreck, drawn above the hull art. -->
                         <span v-if="tile.fired && !pendingReveal.has(tile.coord)" class="shot-marker"
                             :class="[outgoingClass(tile.coord), { 'over-wreck': isSunkCell(tile.coord) }]">
                             {{ outgoingSymbol(tile.coord) }}
                         </span>
-
-                        <span v-if="hoveredCoord === tile.coord" class="tile-coord-tooltip">{{ tile.coord }}</span>
                     </div>
 
                     <div v-for="ship in sunkShips" :key="'sunk-' + ship.key" class="sunk-ship-reveal"
@@ -123,12 +121,20 @@
                 </div>
             </div>
         </div>
+
+        <Teleport to="body">
+            <div v-if="hoveredTile && hoverPos" class="tile-hover-tip" :class="{ below: hoverPos.below }"
+                :style="hoverPos.style">
+                <span class="tile-hover-tip-coord">{{ hoveredTile.coord }}</span>
+                <p v-if="hoveredTile.task" class="tile-hover-tip-desc">{{ hoveredTile.task.description }}</p>
+            </div>
+        </Teleport>
     </div>
 </template>
 
 <script setup lang="ts">
 import '@/assets/battleshipBoard.css'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { BoardTeam, BoardTile, FireResponse, GetBoardResponse, ShipStatusShip, Shot, ShotResult, Team } from '@/api/types'
 import { ATTACK_WARNING_MS, type ShotFiredSignal } from '@/composables/useGameData'
 import { reconstructSunkShips } from '@/utils/sunkFleet'
@@ -296,14 +302,51 @@ function onImageError(event: Event, remoteUrl: string | null) {
 // Clicking a tile opens a detail drawer rather than firing immediately — the
 // "Fire" button in that drawer is the actual trigger.
 const selectedCoord = ref<string | null>(null)
-const hoveredCoord = ref<string | null>(null)
 
 const selectedTile = computed<BoardTile | null>(() => {
     if (!selectedCoord.value) return null
     return boardTeam.value?.tiles.find((t) => t.coord === selectedCoord.value) ?? null
 })
 
+// Hovering a tile shows its coord and task description, so you don't have to
+// open the drawer just to read what it asks for. The card is teleported to
+// <body> with fixed positioning, so the board's clipping can't cut it off.
+const hoveredCoord = ref<string | null>(null)
+const hoverPos = ref<{ style: Record<string, string>; below: boolean } | null>(null)
+
+const hoveredTile = computed(() =>
+    hoveredCoord.value ? (boardTeam.value?.tiles.find((t) => t.coord === hoveredCoord.value) ?? null) : null,
+)
+
+const HOVER_TIP_HALF_WIDTH = 130 // half of .tile-hover-tip's max-width
+
+function onTileHover(e: MouseEvent, tile: BoardTile) {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    // Near the top of the screen there's no room above for a wrapped description.
+    const below = r.top < 150
+    // Keep the card on-screen when hovering the board's outer columns.
+    const x = Math.min(
+        Math.max(r.left + r.width / 2, HOVER_TIP_HALF_WIDTH + 8),
+        window.innerWidth - HOVER_TIP_HALF_WIDTH - 8,
+    )
+    hoveredCoord.value = tile.coord
+    hoverPos.value = {
+        below,
+        style: { left: `${Math.round(x)}px`, top: `${Math.round(below ? r.bottom + 8 : r.top - 8)}px` },
+    }
+}
+
+function clearHover() {
+    hoveredCoord.value = null
+    hoverPos.value = null
+}
+
+// A fixed-position card would otherwise stay put while the board scrolls away.
+onMounted(() => window.addEventListener('scroll', clearHover, true))
+onUnmounted(() => window.removeEventListener('scroll', clearHover, true))
+
 function onTileClick(tile: BoardTile) {
+    clearHover()
     selectedCoord.value = tile.coord
 }
 
