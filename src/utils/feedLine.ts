@@ -11,6 +11,7 @@ export type FeedKind =
     | 'clue'
     | 'pet'
     | 'death'
+    | 'xp'
     | 'completion'
     | 'progress'
     | 'bonus'
@@ -71,6 +72,9 @@ function parseWho(who: string): FeedSeg[] {
 
 function summaryKind(s: string): FeedKind {
     if (s.startsWith('looted ')) return 'loot'
+    // before the 'pet' check — a gamble can roll a pet ("gambled and got Pet penance queen")
+    if (s.startsWith('gambled')) return 'loot'
+    if (s.startsWith('gained ') && s.includes(' xp ')) return 'xp'
     if (s.startsWith('killed ')) return 'kill'
     if (s.includes('slayer task')) return 'slayer'
     if (s.includes('combat achievement')) return 'ca'
@@ -80,22 +84,26 @@ function summaryKind(s: string): FeedKind {
     return 'plain'
 }
 
+/**
+ * "Name xN, Name, …" → item rows. The backend can list the same drop more than
+ * once ("Bird nest, Bird nest, Bird nest x2"), so repeats fold into one row
+ * with a summed quantity.
+ */
+function parseItems(list: string): LootLine[] {
+    const byName = new Map<string, number>()
+    for (const it of list.split(', ')) {
+        const q = it.match(/^(.+?) x(\d+)$/)
+        const name = q ? g(q, 1) : it
+        const qty = q ? Number(g(q, 2)) : 1
+        byName.set(name, (byName.get(name) ?? 0) + qty)
+    }
+    return [...byName].map(([name, qty]) => ({ name, qty }))
+}
+
 /** the `event.summary()` half of a Dink line */
 function parseSummary(s: string): FeedSeg[] {
     let m = s.match(/^looted (.+) from (.+)$/)
-    if (m) {
-        // the backend can list the same drop more than once ("Bird nest, Bird
-        // nest, Bird nest x2") — fold those into one row with a summed quantity.
-        const byName = new Map<string, number>()
-        for (const it of g(m, 1).split(', ')) {
-            const q = it.match(/^(.+?) x(\d+)$/)
-            const name = q ? g(q, 1) : it
-            const qty = q ? Number(g(q, 2)) : 1
-            byName.set(name, (byName.get(name) ?? 0) + qty)
-        }
-        const items: LootLine[] = [...byName].map(([name, qty]) => ({ name, qty }))
-        return [txt('got '), loot(items), txt(' from '), bss(g(m, 2))]
-    }
+    if (m) return [txt('got '), loot(parseItems(g(m, 1))), txt(' from '), bss(g(m, 2))]
     m = s.match(/^killed (.+?) \(KC (\d+)(?:, ([\d.]+)s)?\)$/)
     if (m) {
         const meta = `Kill count ${g(m, 2)}${m[3] ? ` · ${m[3]}s` : ''}`
@@ -104,13 +112,22 @@ function parseSummary(s: string): FeedSeg[] {
     m = s.match(/^completed a (.+?) slayer task \((.+?)\)$/)
     if (m) return [txt('finished a '), bss(g(m, 1)), txt(' slayer task · '), emp(g(m, 2))]
     m = s.match(/^completed the (.+?) combat achievement '(.+?)'$/)
-    if (m) return [txt('completed the '), emp(g(m, 1)), txt(' CA — '), emp(`‘${g(m, 2)}’`)]
+    // same shape as a kill: highlighted subject, then the detail as a pill
+    if (m) return [txt('completed '), bss(g(m, 2)), txt(' '), out(`${g(m, 1)} CA`, 'muted')]
     m = s.match(/^opened a (.+?) casket worth (.+?) gp$/)
     if (m) return [txt('opened a '), emp(g(m, 1)), txt(' casket '), out(`${g(m, 2)} gp`, 'good')]
     m = s.match(/^got the (.+?) pet!$/)
     if (m) return [txt('got the '), emp(g(m, 1)), txt(' pet '), out('PET', 'good')]
     m = s.match(/^got a duplicate (.+?) pet$/)
     if (m) return [txt('got a duplicate '), emp(g(m, 1)), txt(' pet')]
+    // Barbarian Assault gamble; the count is the player's running gamble total
+    m = s.match(/^gambled(?: (\d+))? and got (.+)$/)
+    if (m) {
+        const count = m[1]
+        return [txt('gambled and got '), loot(parseItems(g(m, 2))), ...(count ? [txt(' '), out(`gamble #${count}`, 'muted')] : [])]
+    }
+    m = s.match(/^gained (\d+) xp since the event started$/)
+    if (m) return [txt('gained '), emp(`${Number(g(m, 1)).toLocaleString('en-US')} XP`), txt(' since the event started')]
     return [txt(s)]
 }
 

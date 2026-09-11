@@ -17,9 +17,9 @@
                 <div v-else class="challenge-revealed">
                     <span class="challenge-title">{{ task.title }}</span>
                     <span v-if="full && task.caption" class="challenge-caption">{{ task.caption }}</span>
-                    <span v-if="task.completions?.length" class="challenge-completed-by">
+                    <span v-if="task.completedBy" class="challenge-completed-by">
                         <span class="challenge-dot" />
-                        <span class="challenge-cb-names">{{ full ? completedBy(task) : completedNames(task) }}</span>
+                        <span class="challenge-cb-names">{{ full ? completedBy(task) : task.completedBy }}</span>
                     </span>
                 </div>
             </div>
@@ -36,10 +36,11 @@
                 </div>
                 <p v-if="detail.caption" class="challenge-detail-caption">{{ detail.caption }}</p>
                 <p v-if="detail.description" class="challenge-detail-description">{{ detail.description }}</p>
-                <div v-if="detail.completions?.length" class="challenge-detail-completions">
+                <div v-if="detail.completedBy" class="challenge-detail-completions">
                     <label class="challenge-detail-label">Completed By</label>
-                    <div v-for="c in detail.completions" :key="c.teamId + c.completedBy" class="challenge-detail-completion">
-                        {{ c.completedBy }} <span class="challenge-detail-team">({{ c.teamName }})</span>
+                    <div class="challenge-detail-completion">
+                        {{ detail.completedBy }}
+                        <span v-if="detail.teamName" class="challenge-detail-team">({{ detail.teamName }})</span>
                     </div>
                 </div>
             </div>
@@ -60,22 +61,18 @@ const revealedCount = computed(() => props.tasks.filter((t) => t.revealed).lengt
 
 function statusClass(task: BonusTask): string {
     if (!task.revealed) return 'locked'
-    return task.completions?.length ? 'completed' : 'revealed'
+    return task.completedBy ? 'completed' : 'revealed'
 }
 
 function statusLabel(task: BonusTask): string {
     if (!task.revealed) return 'Locked'
-    return task.completions?.length ? 'Completed' : 'Revealed'
+    return task.completedBy ? 'Completed' : 'Revealed'
 }
 
+// The full Challenges page shows "name (Team)"; compact tiles show just the
+// name, as the team form is too long for a board-cell-sized tile.
 function completedBy(task: BonusTask): string | null {
-    if (!task.completions?.length) return null
-    return task.completions.map((c) => `${c.completedBy} (${c.teamName})`).join(', ')
-}
-
-// Compact tiles show just the names — the team is obvious from context and the
-// full "name (Team)" form is too long for a board-cell-sized tile.
-function completedNames(task: BonusTask): string {
-    return (task.completions ?? []).map((c) => c.completedBy).join(', ')
+    if (!task.completedBy) return null
+    return task.teamName ? `${task.completedBy} (${task.teamName})` : task.completedBy
 }
 </script>

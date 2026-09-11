@@ -284,6 +284,7 @@
     color: var(--color-primary);
 }
 
+.feed-act.xp .feed-marker,
 .feed-act.completion .feed-marker,
 .feed-act.bonus .feed-marker,
 .feed-act.lock .feed-marker,

@@ -81,20 +81,20 @@ export interface GetShipStatusResponse {
     teams: ShipStatusTeam[]
 }
 
-export interface BonusCompletion {
-    teamId: number
-    teamName: string
-    completedBy: string
-    completedAt: string
-}
-
+/**
+ * A hidden challenge. A challenge can only be claimed once, so the claimant is
+ * flat on the task; every field past `revealed` is absent until it's claimed.
+ */
 export interface BonusTask {
     id: number
     revealed: boolean
     title?: string
     caption?: string
     description?: string
-    completions?: BonusCompletion[]
+    completedBy?: string
+    teamId?: number
+    teamName?: string
+    completedAt?: string
 }
 
 export interface GetBonusBoardResponse {

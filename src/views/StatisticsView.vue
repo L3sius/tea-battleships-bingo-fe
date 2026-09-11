@@ -133,7 +133,7 @@ interface PlayerStat {
 // "frontend" so per-player attack stats aren't possible yet.
 const playerStats = computed<PlayerStat[]>(() => {
     const allTiles = board.value?.teams.flatMap((t) => t.tiles) ?? []
-    const bonusCompletions = (bonusTasks.value ?? []).flatMap((b) => b.completions ?? [])
+    const bonusCompletions = (bonusTasks.value ?? []).filter((b) => b.completedBy)
 
     const rows = teams.value.flatMap((team) =>
         team.players.map((player) => {

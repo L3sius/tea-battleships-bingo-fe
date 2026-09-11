@@ -192,6 +192,7 @@ const KIND_ICON: Partial<Record<FeedKind, string>> = {
     bonus: '★',
     kill: '☠',
     loot: '◆',
+    xp: '▲',
     slayer: '⚔',
     ca: '✦',
     clue: '◇',
