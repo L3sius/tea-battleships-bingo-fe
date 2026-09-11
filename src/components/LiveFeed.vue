@@ -28,7 +28,7 @@
                 {{ messages.length === 0 ? 'Waiting for activity…' : 'Nothing here yet.' }}
             </div>
             <div v-else class="feed-list">
-                <div v-for="(entry, i) in activity" :key="'a' + i" class="feed-item feed-act"
+                <div v-for="entry in activity" :key="entry.id" class="feed-item feed-act"
                     :class="[entry.parsed.kind, { fail: !entry.isSuccessAction }]">
                     <span class="feed-marker">{{ kindIcon(entry.parsed.kind, entry.isSuccessAction) }}</span>
                     <div class="feed-item-body">
@@ -47,7 +47,9 @@
         <template v-else>
             <div v-if="battle.length === 0" class="feed-empty">No shots fired yet.</div>
             <div v-else class="feed-list">
-                <div v-for="(s, i) in battle" :key="'b' + i" class="feed-item feed-shot" :class="s.result">
+                <!-- an attacker can only fire at a coord once, so this pair is unique -->
+                <div v-for="s in battle" :key="`${s.attackerTeamId}:${s.coord}`" class="feed-item feed-shot"
+                    :class="s.result">
                     <span class="feed-marker">{{ shotMarker(s.result) }}</span>
                     <div class="feed-item-body">
                         <span class="feed-shot-line">
@@ -89,11 +91,12 @@
 
 <script setup lang="ts">
 import '@/assets/liveFeed.css'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref, toRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import type { ActionMessage, Shot, Team } from '@/api/types'
 import { teamColor } from '@/utils/teamColors'
-import { parseFeedLine, type FeedKind, type FeedSeg } from '@/utils/feedLine'
+import { parseFeedLine, type FeedKind, type FeedSeg, type ParsedFeed } from '@/utils/feedLine'
+import { MAX_LIVE_MESSAGES } from '@/composables/useGameData'
 
 const props = defineProps<{
     messages: ActionMessage[]
@@ -116,12 +119,25 @@ function isAttackLine(message: string): boolean {
     return m.includes('fired at') || m.includes('attacked') || m.includes('sank') || m.includes('sunk')
 }
 
+type ActivityEntry = ActionMessage & { parsed: ParsedFeed }
+
+// Each line is parsed once and the entry reused on every later recompute —
+// otherwise every new line would re-run the regex chain over the whole feed.
+// Weak, so entries disappear along with messages trimmed off the end.
+const entryCache = new WeakMap<ActionMessage, ActivityEntry>()
+
+function toEntry(m: ActionMessage): ActivityEntry {
+    const raw = toRaw(m)
+    let entry = entryCache.get(raw)
+    if (!entry) {
+        entry = { ...raw, parsed: parseFeedLine(raw.message, raw.isSuccessAction) }
+        entryCache.set(raw, entry)
+    }
+    return entry
+}
+
 // messages already arrive newest-first (see useGameData.pushLiveMessage).
-const activity = computed(() =>
-    props.messages
-        .filter((m) => !isAttackLine(m.message))
-        .map((m) => ({ ...m, parsed: parseFeedLine(m.message, m.isSuccessAction) })),
-)
+const activity = computed(() => props.messages.filter((m) => !isAttackLine(m.message)).map(toEntry))
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
 
@@ -196,8 +212,14 @@ function kindIcon(kind: FeedKind, ok: boolean): string {
 // without losing same-second ordering the way a firedAt sort would.
 const battle = computed(() => [...(props.shots ?? [])].reverse())
 
+// Once the buffer is full, old lines are being dropped as new ones arrive, so the
+// number is a floor rather than a total — say so instead of freezing at the cap.
+const activityCount = computed(() =>
+    props.messages.length >= MAX_LIVE_MESSAGES ? `${activity.value.length}+` : String(activity.value.length),
+)
+
 const tabs = computed(() => [
-    { key: 'activity' as const, label: 'Activity', count: activity.value.length },
+    { key: 'activity' as const, label: 'Activity', count: activityCount.value },
     { key: 'battle' as const, label: 'Battle History', count: battle.value.length },
 ])
 

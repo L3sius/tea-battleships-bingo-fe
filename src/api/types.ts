@@ -141,6 +141,8 @@ export interface ApiErrorBody {
 }
 
 export interface ActionMessage {
+    /** Assigned client-side on arrival — stable identity for list keys. */
+    id: number
     timestamp: string
     isSuccessAction: boolean
     message: string

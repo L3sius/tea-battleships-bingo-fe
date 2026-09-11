@@ -52,7 +52,9 @@ const lastShotFired = ref<ShotFiredSignal | null>(null)
 // Shots inside their warning window right now — drives the blinking fleet card.
 const pendingAttacks = ref<PendingAttack[]>([])
 
-const MAX_LIVE_MESSAGES = 100
+// Twice the backend's ACTION_QUEUE_SIZE (500): a reload replays the server's 500,
+// and a tab left open keeps accumulating live lines up to this before trimming.
+export const MAX_LIVE_MESSAGES = 1000
 
 let started = false
 // `${attackerTeamId}:${coord}` for shots already announced, so a shot never
@@ -139,6 +141,8 @@ function announceAttack(shot: ShotFiredSignal) {
     }, ATTACK_WARNING_MS)
 }
 
+let nextMessageId = 0
+
 // The /getActionStream frames don't quite match the rest of the API: the
 // backend's BingoAction is serialized snake_case (`is_success_action`) and its
 // `timestamp` is a Unix seconds integer, not a date string. Normalize both here
@@ -152,6 +156,7 @@ function toActionMessage(raw: Record<string, unknown>): ActionMessage {
         timestamp = ts
     }
     return {
+        id: nextMessageId++,
         message: typeof raw.message === 'string' ? raw.message : '',
         isSuccessAction: (raw.isSuccessAction ?? raw.is_success_action ?? true) === true,
         timestamp,
