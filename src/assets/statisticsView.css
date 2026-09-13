@@ -172,7 +172,7 @@
 /* ── Player table ── */
 .stats-player-row {
     display: grid;
-    grid-template-columns: 1.3fr 1.2fr 0.7fr 1.4fr 0.7fr;
+    grid-template-columns: 1.2fr 1.1fr 0.5fr 2.4fr;
     align-items: center;
     gap: 4px;
     padding: 10px 14px;
@@ -190,6 +190,50 @@
     letter-spacing: 0.08em;
 }
 
-.stats-player-cat {
-    color: var(--color-secondary);
+.stats-player-tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+}
+
+.stats-coord-chip {
+    font-size: 11px;
+    padding: 0 5px;
+    border-radius: 3px;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    color: var(--color-fg);
+}
+
+.stats-bonus-chip {
+    font-size: 11px;
+    padding: 0 6px;
+    border-radius: 3px;
+    background: var(--color-primary-soft);
+    border: 1px solid rgba(201, 151, 42, 0.5);
+    color: var(--color-primary);
+}
+
+/* A little ribbing for the backend, shown only while force-completed tiles exist. */
+.stats-hand-fixed {
+    margin: -6px 0 0;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    border: 1px dashed rgba(201, 151, 42, 0.45);
+    background: var(--color-primary-soft);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-style: italic;
+    color: var(--color-fg-dim);
+}
+
+.stats-hand-fixed strong {
+    font-style: normal;
+    color: var(--color-primary);
+}
+
+.stats-team-count {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    color: var(--color-muted);
 }

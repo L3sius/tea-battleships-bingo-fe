@@ -9,6 +9,11 @@
             </div>
         </div>
 
+        <p v-if="handFixedTiles > 0" class="stats-hand-fixed">
+            <strong>{{ handFixedTiles }}</strong> {{ handFixedTiles === 1 ? 'tile' : 'tiles' }} had to be completed by hand
+            after Harry's backend ran aground. He insists it was a feature.
+        </p>
+
         <h2 class="stats-subtitle">By Team</h2>
         <div class="stats-team-table">
             <div class="stats-team-row stats-team-row-head">
@@ -20,7 +25,9 @@
                 <span>Ships Afloat</span>
             </div>
             <div v-for="row in teamRows" :key="row.teamId" class="stats-team-row">
-                <span class="stats-team-name" :style="{ color: row.color }">{{ row.name }}</span>
+                <span class="stats-team-name" :style="{ color: row.color }">
+                    {{ row.name }} <span class="stats-team-count">({{ row.playerCount }})</span>
+                </span>
                 <span>{{ row.tasksCompleted }}</span>
                 <span>{{ row.shotsFired }}</span>
                 <span>{{ row.hits }}</span>
@@ -35,7 +42,7 @@
             <div v-for="r in rosters" :key="r.teamId" class="stats-roster">
                 <div class="stats-roster-head" :style="{ '--team-color': r.color }">
                     <span class="stats-roster-dot" />
-                    {{ r.name }}
+                    {{ r.name }} <span class="stats-team-count">({{ r.players.length }})</span>
                 </div>
                 <ul v-if="r.players.length" class="stats-roster-players">
                     <li v-for="p in r.players" :key="p.name">
@@ -48,7 +55,7 @@
         </div>
 
         <h2 class="stats-subtitle">Players</h2>
-        <p v-if="!playerStats.some((p) => p.tasksDone || p.bonusCracked)" class="stats-hint">
+        <p v-if="!playerStats.some((p) => p.tasksDone || p.bonuses.length)" class="stats-hint">
             No player-attributed completions yet.
         </p>
         <div v-else class="stats-team-table">
@@ -56,15 +63,17 @@
                 <span>Player</span>
                 <span>Team</span>
                 <span>Tasks</span>
-                <span>Top Category</span>
-                <span>Hidden</span>
+                <span>Completed</span>
             </div>
             <div v-for="p in playerStats" :key="p.teamName + p.name" class="stats-player-row">
                 <span class="stats-team-name">{{ p.name }}</span>
                 <span :style="{ color: p.color }">{{ p.teamName }}</span>
                 <span>{{ p.tasksDone }}</span>
-                <span class="stats-player-cat">{{ p.topCategory ?? '—' }}</span>
-                <span>{{ p.bonusCracked || '—' }}</span>
+                <span class="stats-player-tiles">
+                    <span v-for="c in p.coords" :key="c" class="stats-coord-chip">{{ c }}</span>
+                    <span v-for="b in p.bonuses" :key="b" class="stats-bonus-chip">★ {{ b }}</span>
+                    <template v-if="!p.coords.length && !p.bonuses.length">—</template>
+                </span>
             </div>
         </div>
     </div>
@@ -92,6 +101,12 @@ const summaryStats = computed(() => {
     ]
 })
 
+// Completed tiles with no player credited — admin force-completes from when the
+// backend misbehaved.
+const handFixedTiles = computed(
+    () => (board.value?.teams ?? []).flatMap((t) => t.tiles).filter((t) => t.completed && !t.completedBy).length,
+)
+
 const teamRows = computed(() =>
     teams.value.map((team) => {
         const boardTeam = board.value?.teams.find((t) => t.teamId === team.id)
@@ -100,6 +115,8 @@ const teamRows = computed(() =>
         return {
             teamId: team.id,
             name: team.name,
+            // alts are nested under their main, so this counts people, not accounts
+            playerCount: team.players.length,
             color: teamColor(teams.value, team.id),
             tasksCompleted: boardTeam?.tiles.filter((t) => t.completed).length ?? 0,
             shotsFired: teamShots.length,
@@ -125,39 +142,36 @@ interface PlayerStat {
     teamName: string
     color: string
     tasksDone: number
-    topCategory: string | null
-    bonusCracked: number
+    /** Tiles they completed, in the order they completed them. */
+    coords: string[]
+    /** Titles of the hidden challenges they claimed. */
+    bonuses: string[]
 }
 
 // Only task/bonus completions carry a real player name; shots are all fired as
 // "frontend" so per-player attack stats aren't possible yet.
 const playerStats = computed<PlayerStat[]>(() => {
     const allTiles = board.value?.teams.flatMap((t) => t.tiles) ?? []
-    const bonusCompletions = (bonusTasks.value ?? []).filter((b) => b.completedBy)
+    const claimed = (bonusTasks.value ?? []).filter((b) => b.completedBy)
 
     const rows = teams.value.flatMap((team) =>
         team.players.map((player) => {
             const mine = allTiles.filter((t) => t.completed && t.completedBy === player.name)
-            const catCounts = new Map<string, number>()
-            for (const t of mine) {
-                const c = t.task?.category
-                if (c) catCounts.set(c, (catCounts.get(c) ?? 0) + 1)
-            }
-            const topCategory = [...catCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
             return {
                 name: player.name,
                 teamName: team.name,
                 color: teamColor(teams.value, team.id),
                 tasksDone: mine.length,
-                topCategory: topCategory ? capitalize(topCategory) : null,
-                bonusCracked: bonusCompletions.filter((c) => c.completedBy === player.name).length,
+                coords: [...mine]
+                    .sort((a, b) => (a.completedAt ?? '').localeCompare(b.completedAt ?? ''))
+                    .map((t) => t.coord),
+                bonuses: claimed.filter((b) => b.completedBy === player.name).map((b) => b.title ?? 'Hidden challenge'),
             }
         }),
     )
-    return rows.sort((a, b) => b.tasksDone - a.tasksDone || a.name.localeCompare(b.name))
+    // Claimed challenges break ties, so bonus-only players don't sink among the zeroes.
+    return rows.sort(
+        (a, b) => b.tasksDone - a.tasksDone || b.bonuses.length - a.bonuses.length || a.name.localeCompare(b.name),
+    )
 })
-
-function capitalize(s: string) {
-    return s.charAt(0).toUpperCase() + s.slice(1)
-}
 </script>
