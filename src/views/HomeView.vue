@@ -12,8 +12,8 @@
                 <BattleshipBoard :team-id="viewedTeam" :teams="teams" :board="board" :shots="shots"
                     :show-test-ships="showTestShips" :force-attack-type="forceAttackType"
                     :last-shot-fired="lastShotFired" :enemy-fleet="enemyFleet" :on-fire="handleFireRequest"
-                    @fire-result="handleFireResult" @fire-error="handleFireError"
-                    @animating="boardAnimating = $event" />
+                    :hidden-shot-keys="inFlightKeys" @fire-result="handleFireResult" @fire-error="handleFireError"
+                    @animating="boardAnimating = $event" @shot-claimed="claimLanding" @shot-landed="landShot" />
                 <Legend />
             </div>
 
@@ -66,8 +66,24 @@ import { autoSwitch } from '@/utils/autoSwitch'
 import { teamColor } from '@/utils/teamColors'
 import type { FireResponse } from '@/api/types'
 
-const { teams, board, shipStatusTeams, bonusTasks, shots, liveMessages, errorMessage, connected, lastShotFired, pendingAttacks, fireAt } =
-    useGameData()
+// Shots and ship status are the in-flight-masked versions (see useGameData), so
+// no result shows anywhere on this page before its shell lands.
+const {
+    teams,
+    board,
+    visibleShipStatus: shipStatusTeams,
+    bonusTasks,
+    visibleShots: shots,
+    liveMessages,
+    errorMessage,
+    connected,
+    lastShotFired,
+    pendingAttacks,
+    inFlightKeys,
+    claimLanding,
+    landShot,
+    fireAt,
+} = useGameData()
 
 // The board is a targeting view of the enemy's waters, so the hulls drawn on it
 // are the opponent's — their lengths and art come from the opponent's fleet.

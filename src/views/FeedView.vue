@@ -14,5 +14,6 @@ import { silenceThisWindow } from '@/utils/sound'
 // service still sounds the attack siren, so the popup silences itself — the main
 // page is where sound belongs.
 silenceThisWindow()
-const { teams, shots, liveMessages, connected } = useGameData()
+// visibleShots: Battle History holds a shot back until its countdown ends.
+const { teams, visibleShots: shots, liveMessages, connected } = useGameData()
 </script>

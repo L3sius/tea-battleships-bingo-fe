@@ -5,7 +5,7 @@ import TopNav from '@/components/TopNav.vue'
 import MobileNav from '@/components/MobileNav.vue'
 import { useGameData } from '@/composables/useGameData'
 
-const { board, shots } = useGameData()
+const { board, visibleShots: shots } = useGameData()
 
 const route = useRoute()
 // Chrome-less routes (the pop-out feed window).

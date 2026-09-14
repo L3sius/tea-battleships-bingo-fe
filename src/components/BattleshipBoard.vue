@@ -31,7 +31,7 @@
                         </template>
 
                         <!-- The hit marker stays visible over a wreck, drawn above the hull art. -->
-                        <span v-if="tile.fired && !pendingReveal.has(tile.coord)" class="shot-marker"
+                        <span v-if="tile.fired && !isHidden(tile.coord)" class="shot-marker"
                             :class="[outgoingClass(tile.coord), { 'over-wreck': isSunkCell(tile.coord) }]">
                             {{ outgoingSymbol(tile.coord) }}
                         </span>
@@ -158,6 +158,8 @@ const props = defineProps<{
     forceAttackType?: 'cannon' | 'nuke' | 'laser' | 'kraken' | 'storm' | null
     /** Newest shot from the game stream — replays its animation for observers. */
     lastShotFired?: ShotFiredSignal | null
+    /** `${attackerTeamId}:${coord}` of every shot still in flight page-wide. */
+    hiddenShotKeys?: Set<string>
     /** The OPPOSING team's fleet (from /getShipStatus) — hull lengths and art. */
     enemyFleet?: ShipStatusShip[]
     /** Parent owns the actual API call (and the board/shots refetch it triggers). */
@@ -177,6 +179,10 @@ const emit = defineEmits<{
     'fire-error': [error: unknown]
     /** An attack animation started (true) or the last one finished (false). */
     animating: [active: boolean]
+    /** This board is animating the shot — keep its result hidden until it lands. */
+    'shot-claimed': [key: string]
+    /** The shell landed, or its animation was cancelled — its result may show. */
+    'shot-landed': [key: string]
 }>()
 
 const gridEl = ref<HTMLElement>()
@@ -265,7 +271,8 @@ const sunkShips = computed(() => {
     const myDamage = props.shots
         .filter((s) => s.attackerTeamId === props.teamId && s.result !== 'miss')
         .map((s) => ({ coord: s.coord, sunkShipKey: s.sunkShipKey }))
-    return reconstructSunkShips(myDamage, props.enemyFleet, gridSize.value, pendingReveal.value).map((ship) => ({
+    const hidden = new Set([...pendingReveal.value, ...inFlightCoords.value])
+    return reconstructSunkShips(myDamage, props.enemyFleet, gridSize.value, hidden).map((ship) => ({
         ...ship,
         image: ship.image && !failedShipImages.value.has(ship.image) ? ship.image : null,
     }))
@@ -366,7 +373,7 @@ function canFire(tile: BoardTile) {
 function statusText(tile: BoardTile): string {
     if (!tile.completed) return 'Not completed yet.'
     if (!tile.fired) return 'Completed — ready to fire!'
-    if (pendingReveal.value.has(tile.coord)) return 'Firing…'
+    if (isHidden(tile.coord)) return 'Firing…'
     const shot = myShots.value.get(tile.coord)
     if (shot?.result === 'sunk') return `Fired — sank the enemy ${shot.sunkShipKey}!`
     if (shot?.result === 'hit') return 'Fired — hit!'
@@ -377,7 +384,7 @@ function statusText(tile: BoardTile): string {
 function statusClass(tile: BoardTile) {
     if (!tile.completed) return 'pending'
     if (!tile.fired) return 'ready'
-    if (pendingReveal.value.has(tile.coord)) return 'ready'
+    if (isHidden(tile.coord)) return 'ready'
     return myShots.value.get(tile.coord)?.result === 'miss' ? 'miss' : 'hit'
 }
 
@@ -417,6 +424,21 @@ const seenShots = new Set<string>()
 // even landed. Suppress it for coords with an animation in flight so it pops
 // in sync with the animation's own impact instead of spoiling it early.
 const pendingReveal = ref<Set<string>>(new Set())
+
+// This board team's shots still in flight page-wide. Covers teammates watching,
+// who never clicked Fire and so have no pendingReveal hold of their own.
+const inFlightCoords = computed(() => {
+    const coords = new Set<string>()
+    for (const key of props.hiddenShotKeys ?? []) {
+        const [team, coord] = key.split(':')
+        if (coord && Number(team) === props.teamId) coords.add(coord)
+    }
+    return coords
+})
+
+function isHidden(coord: string) {
+    return pendingReveal.value.has(coord) || inFlightCoords.value.has(coord)
+}
 
 function spawnShot(
     coord: string,
@@ -464,6 +486,7 @@ async function fireSelectedTile() {
 function onShotBurst(coord: string) {
     pendingReveal.value.delete(coord)
     const shot = activeShots.value.find((s) => s.coord === coord)
+    if (shot) emit('shot-landed', `${shot.attackerTeamId}:${coord}`)
     if (shot?.fireResponse) emit('fire-result', shot.fireResponse)
 }
 
@@ -479,7 +502,10 @@ watch(
         const attackType = props.forceAttackType ?? attackTypeForSeed(evt.animationSeed)
         const response = pendingFireResponses.get(evt.coord) ?? null
         pendingFireResponses.delete(evt.coord)
-        if (!spawnShot(evt.coord, evt.attackerTeamId, evt.result, attackType, response)) {
+        if (spawnShot(evt.coord, evt.attackerTeamId, evt.result, attackType, response)) {
+            // Keep the result hidden page-wide until this animation lands.
+            emit('shot-claimed', key)
+        } else {
             // No tile to aim at — surface the outcome rather than swallowing it.
             pendingReveal.value.delete(evt.coord)
             if (response) emit('fire-result', response)
@@ -491,7 +517,11 @@ onUnmounted(() => clearTimeout(fireTimer))
 
 function onShotDone(id: number) {
     const shot = activeShots.value.find((s) => s.id === id)
-    if (shot) pendingReveal.value.delete(shot.coord)
+    if (shot) {
+        pendingReveal.value.delete(shot.coord)
+        // Safety net in case the animation ended without a burst.
+        emit('shot-landed', `${shot.attackerTeamId}:${shot.coord}`)
+    }
     activeShots.value = activeShots.value.filter((s) => s.id !== id)
 }
 
@@ -510,7 +540,10 @@ watch(
         selectedCoord.value = null
         const leaving = activeShots.value.filter((s) => s.attackerTeamId !== teamId)
         if (!leaving.length) return
-        for (const s of leaving) pendingReveal.value.delete(s.coord)
+        for (const s of leaving) {
+            pendingReveal.value.delete(s.coord)
+            emit('shot-landed', `${s.attackerTeamId}:${s.coord}`)
+        }
         activeShots.value = activeShots.value.filter((s) => s.attackerTeamId === teamId)
     },
 )

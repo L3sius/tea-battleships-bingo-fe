@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import * as api from '@/api/client'
 import { playSound } from '@/utils/sound'
 import type {
@@ -51,6 +51,42 @@ const connected = ref(false)
 const lastShotFired = ref<ShotFiredSignal | null>(null)
 // Shots inside their warning window right now — drives the blinking fleet card.
 const pendingAttacks = ref<PendingAttack[]>([])
+
+// Shots whose result mustn't show yet: announced, but the shell hasn't landed.
+// Their data still loads as normal (so it's ready at impact); visibleShots and
+// visibleShipStatus just hide it from every view until then. A board animating
+// the shot claims it and reports the impact; on a page with nothing animating
+// it, it's released when the countdown ends — there's nothing there to spoil.
+const inFlight = ref(new Map<string, ShotFiredSignal>())
+const claimed = new Set<string>()
+const shotKey = (s: { attackerTeamId: number; coord: string }) => `${s.attackerTeamId}:${s.coord}`
+
+const inFlightKeys = computed(() => new Set(inFlight.value.keys()))
+const visibleShots = computed(() => shots.value.filter((s) => !inFlight.value.has(shotKey(s))))
+const visibleShipStatus = computed(() => {
+    const sinking = [...inFlight.value.values()].filter((s) => s.sunkShipKey)
+    if (!sinking.length) return shipStatusTeams.value
+    return shipStatusTeams.value.map((team) => {
+        const keys = new Set(sinking.filter((s) => s.targetTeamId === team.teamId).map((s) => s.sunkShipKey))
+        if (!keys.size) return team
+        return {
+            ...team,
+            fleetDestroyed: false,
+            ships: team.ships.map((ship) => (keys.has(ship.key) ? { ...ship, sunk: false } : ship)),
+        }
+    })
+})
+
+/** A board is animating this shot: keep its result hidden until landShot(). */
+function claimLanding(key: string) {
+    claimed.add(key)
+}
+
+/** The shell has landed (or its animation was cancelled): show the result. */
+function landShot(key: string) {
+    claimed.delete(key)
+    inFlight.value.delete(key)
+}
 
 // Twice the backend's ACTION_QUEUE_SIZE (500): a reload replays the server's 500,
 // and a tab left open keeps accumulating live lines up to this before trimming.
@@ -115,13 +151,15 @@ function handleGameEvent(evt: GameStreamEvent) {
 
 /**
  * Opens the warning window for a shot: siren + blinking card now, animation and
- * refreshed board data once it closes. Refreshes are held back too — landing
- * them early would pop the hit marker on the board before the shell arrives.
+ * refreshed data once it closes. The shot is in flight from the very start, so
+ * its result stays hidden everywhere (see inFlight) — even when other events
+ * reload the board while the countdown runs.
  */
 function announceAttack(shot: ShotFiredSignal) {
-    const key = `${shot.attackerTeamId}:${shot.coord}`
+    const key = shotKey(shot)
     if (announced.has(key)) return
     announced.add(key)
+    inFlight.value.set(key, shot)
 
     pendingAttacks.value.push({
         attackerTeamId: shot.attackerTeamId,
@@ -138,6 +176,10 @@ function announceAttack(shot: ShotFiredSignal) {
         refreshBoard().catch(reportError)
         refreshShipStatus().catch(reportError)
         refreshShots().catch(reportError)
+        // A board animating the shot claims it during this flush; otherwise reveal now.
+        nextTick(() => {
+            if (!claimed.has(key)) inFlight.value.delete(key)
+        })
     }, ATTACK_WARNING_MS)
 }
 
@@ -230,6 +272,11 @@ export function useGameData() {
         connected,
         lastShotFired,
         pendingAttacks,
+        visibleShots,
+        visibleShipStatus,
+        inFlightKeys,
+        claimLanding,
+        landShot,
         fireAt,
         refreshBoard,
     }

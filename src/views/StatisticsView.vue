@@ -85,7 +85,8 @@ import { computed } from 'vue'
 import { useGameData } from '@/composables/useGameData'
 import { teamColor } from '@/utils/teamColors'
 
-const { teams, board, shipStatusTeams, bonusTasks, shots } = useGameData()
+// Masked versions, so a shot's result doesn't show here before its countdown ends.
+const { teams, board, visibleShipStatus: shipStatusTeams, bonusTasks, visibleShots: shots } = useGameData()
 
 const summaryStats = computed(() => {
     const allTiles = board.value?.teams.flatMap((t) => t.tiles) ?? []
