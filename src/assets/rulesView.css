@@ -38,3 +38,31 @@
     color: var(--color-fg-dim);
     margin: 0;
 }
+
+.rules-card-body + .rules-card-body,
+.rules-card-body + .rules-list,
+.rules-list + .rules-card-body {
+    margin-top: 8px;
+}
+
+/* The fleet breakdown: two columns so the ship classes stay compact. Columns
+   (not a grid) so it reads top to bottom in size order instead of zig-zagging. */
+.rules-list {
+    margin: 0;
+    padding-left: 20px;
+    columns: 2;
+    column-gap: 20px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-fg);
+}
+
+.rules-list li {
+    break-inside: avoid;
+}
+
+@media (max-width: 480px) {
+    .rules-list {
+        columns: 1;
+    }
+}
