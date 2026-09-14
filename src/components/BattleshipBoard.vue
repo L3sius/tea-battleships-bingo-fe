@@ -172,7 +172,12 @@ function defenderName(shot: ActiveShot) {
     return shot.fireResponse?.targetTeamName ?? null
 }
 
-const emit = defineEmits<{ 'fire-result': [result: FireResponse]; 'fire-error': [error: unknown] }>()
+const emit = defineEmits<{
+    'fire-result': [result: FireResponse]
+    'fire-error': [error: unknown]
+    /** An attack animation started (true) or the last one finished (false). */
+    animating: [active: boolean]
+}>()
 
 const gridEl = ref<HTMLElement>()
 
@@ -489,6 +494,26 @@ function onShotDone(id: number) {
     if (shot) pendingReveal.value.delete(shot.coord)
     activeShots.value = activeShots.value.filter((s) => s.id !== id)
 }
+
+// The page's auto-switch waits for this before counting down its return.
+watch(
+    () => activeShots.value.length > 0,
+    (active) => emit('animating', active),
+)
+
+// Switching boards: an open tile drawer would suddenly show the other team's
+// tile at the same coord, and a running animation would carry on over the new
+// board (tiles are reused by coord). Close the one, cancel the other.
+watch(
+    () => props.teamId,
+    (teamId) => {
+        selectedCoord.value = null
+        const leaving = activeShots.value.filter((s) => s.attackerTeamId !== teamId)
+        if (!leaving.length) return
+        for (const s of leaving) pendingReveal.value.delete(s.coord)
+        activeShots.value = activeShots.value.filter((s) => s.attackerTeamId === teamId)
+    },
+)
 
 // Dev-only fake fleet overlay — the API never sends real ship positions, so
 // this is randomly generated client-side purely for visual/layout QA.

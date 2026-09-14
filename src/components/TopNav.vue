@@ -24,6 +24,7 @@
 
         <div class="top-nav-aside">
             <DinkSetupModal />
+            <AutoSwitchToggle />
             <SoundControl />
         </div>
     </header>
@@ -34,6 +35,7 @@ import '@/assets/topNav.css'
 import { RouterLink } from 'vue-router'
 import SoundControl from '@/components/SoundControl.vue'
 import DinkSetupModal from '@/components/DinkSetupModal.vue'
+import AutoSwitchToggle from '@/components/AutoSwitchToggle.vue'
 
 defineProps<{ tasksCompleted: number; attacksMade: number }>()
 

@@ -1,0 +1,67 @@
+.auto-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 6px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.auto-switch:hover {
+    color: var(--color-fg);
+    border-color: var(--color-secondary);
+}
+
+.auto-switch.on {
+    color: var(--color-secondary);
+}
+
+.auto-switch:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.auto-switch-track {
+    position: relative;
+    width: 24px;
+    height: 13px;
+    border-radius: 999px;
+    background: var(--color-border);
+    transition: background 0.15s;
+}
+
+.auto-switch.on .auto-switch-track {
+    background: var(--color-primary);
+}
+
+.auto-switch-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--color-fg);
+    transition: transform 0.15s;
+}
+
+.auto-switch.on .auto-switch-knob {
+    transform: translateX(11px);
+}
+
+/* Tight nav on phones: keep the switch, drop the words. */
+@media (max-width: 640px) {
+    .auto-switch-label {
+        display: none;
+    }
+}
