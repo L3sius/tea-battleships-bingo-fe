@@ -90,9 +90,18 @@ export function toggleMute() {
     volume.value = restore
 }
 
+// Set by the pop-out feed window. It shares the game-data service (and so the
+// attack siren) with the main page; without this, a player with both open hears
+// every sound twice. Per window: the popup has its own copy of this module.
+let silenced = false
+
+export function silenceThisWindow() {
+    silenced = true
+}
+
 export function playSound(path: string) {
     try {
-        if (volume.value === 0) return
+        if (silenced || volume.value === 0) return
         const audio = new Audio(path)
         audio.volume = volume.value
         playing.add(audio)
