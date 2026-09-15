@@ -13,7 +13,8 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "format": "prettier --write src/",
-    "sync-item-images": "node scripts/sync-item-images.mjs"
+    "sync-item-images": "node scripts/sync-item-images.mjs",
+    "mock": "node scripts/mock-backend.mjs"
   },
   "dependencies": {
     "vue": "^3.5.22",
