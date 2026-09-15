@@ -58,6 +58,12 @@
                         <KrakenTentacle v-else-if="shot.attackType === 'kraken'" :target-el="shot.targetEl"
                             :result="shot.result" :attacker-color="attackerColor" :defender-name="defenderName(shot)"
                             @burst="onShotBurst(shot.coord)" @done="onShotDone(shot.id)" />
+                        <SnakeAttack v-else-if="shot.attackType === 'snake'" :target-el="shot.targetEl"
+                            :result="shot.result" :attacker-color="attackerColor" :defender-name="defenderName(shot)"
+                            @burst="onShotBurst(shot.coord)" @done="onShotDone(shot.id)" />
+                        <SeamenAttack v-else-if="shot.attackType === 'seamen'" :target-el="shot.targetEl"
+                            :result="shot.result" :attacker-color="attackerColor" :defender-name="defenderName(shot)"
+                            @burst="onShotBurst(shot.coord)" @done="onShotDone(shot.id)" />
                         <StormStrike v-else :target-el="shot.targetEl" :result="shot.result"
                             :attacker-color="attackerColor" :defender-name="defenderName(shot)"
                             @burst="onShotBurst(shot.coord)" @done="onShotDone(shot.id)" />
@@ -147,6 +153,8 @@ import NukeDrop from './NukeDrop.vue'
 import OrbitalLaser from './OrbitalLaser.vue'
 import KrakenTentacle from './KrakenTentacle.vue'
 import StormStrike from './StormStrike.vue'
+import SnakeAttack from './SnakeAttack.vue'
+import SeamenAttack from './SeamenAttack.vue'
 
 const props = defineProps<{
     teamId: number | null
@@ -155,7 +163,7 @@ const props = defineProps<{
     shots: Shot[]
     showTestShips?: boolean
     /** Dev-only: pin every shot to this attack style instead of the seed-derived one. */
-    forceAttackType?: 'cannon' | 'nuke' | 'laser' | 'kraken' | 'storm' | null
+    forceAttackType?: 'cannon' | 'nuke' | 'laser' | 'kraken' | 'storm' | 'snake' | 'seamen' | null
     /** Newest shot from the game stream — replays its animation for observers. */
     lastShotFired?: ShotFiredSignal | null
     /** `${attackerTeamId}:${coord}` of every shot still in flight page-wide. */
@@ -393,8 +401,8 @@ function statusClass(tile: BoardTile) {
 // attack style is derived from the backend's per-shot `animationSeed` (mod the
 // number of styles) so every client — the firer and every observer watching
 // that team's board — plays the exact same animation and sound.
-type AttackType = 'cannon' | 'nuke' | 'laser' | 'kraken' | 'storm'
-const ATTACK_TYPES: AttackType[] = ['cannon', 'nuke', 'laser', 'kraken', 'storm']
+type AttackType = 'cannon' | 'nuke' | 'laser' | 'kraken' | 'storm' | 'snake' | 'seamen'
+const ATTACK_TYPES: AttackType[] = ['cannon', 'nuke', 'laser', 'kraken', 'storm', 'snake', 'seamen']
 
 function attackTypeForSeed(seed: number): AttackType {
     const n = ATTACK_TYPES.length

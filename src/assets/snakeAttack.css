@@ -1,0 +1,22 @@
+/* Full-viewport overlay the snakes slither across. Below the shared impact
+   effects (attackImpact.css, z-index 334+) so the hit/miss burst lands on top. */
+.snake-attack {
+    position: fixed;
+    inset: 0;
+    z-index: 245;
+    pointer-events: none;
+    overflow: visible;
+    /* One shadow pass for the whole overlay — cheaper than one per snake. */
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+    /* Duration must match LEAVE_MS in SnakeAttack.vue. */
+    transition: opacity 450ms ease-in;
+}
+
+.snake-attack.leaving {
+    opacity: 0;
+}
+
+.snake-attack-body {
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+}

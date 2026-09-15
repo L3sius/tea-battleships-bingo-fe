@@ -1,0 +1,28 @@
+/* Full-viewport overlay the swarm swims across. Below the shared impact
+   effects (attackImpact.css, z-index 334+) so the hit/miss burst lands on top. */
+.seamen-attack {
+    position: fixed;
+    inset: 0;
+    z-index: 245;
+    pointer-events: none;
+    overflow: visible;
+    /* One shadow pass for the whole overlay — cheaper than one per swimmer. */
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+    /* Duration must match LEAVE_MS in SeamenAttack.vue. */
+    transition: opacity 450ms ease-in;
+}
+
+.seamen-attack.leaving {
+    opacity: 0;
+}
+
+.seamen-attack-tail {
+    fill: #fff;
+    stroke: #d6dbe4;
+    stroke-width: 1;
+    stroke-linejoin: round;
+}
+
+.seamen-attack-ring {
+    fill: #fff;
+}
