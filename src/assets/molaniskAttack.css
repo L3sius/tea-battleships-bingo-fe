@@ -1,0 +1,53 @@
+/* Full-viewport overlay the swarm crawls across. Below the shared impact
+   effects (attackImpact.css, z-index 334+) so the hit/miss burst lands on top. */
+.molanisk-attack {
+    position: fixed;
+    inset: 0;
+    z-index: 245;
+    pointer-events: none;
+    overflow: visible;
+    /* One shadow pass for the whole overlay — cheaper than one per molanisk. */
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.55));
+    /* Duration must match LEAVE_MS in MolaniskAttack.vue. */
+    transition: opacity 450ms ease-in;
+}
+
+.molanisk-attack.leaving {
+    opacity: 0;
+}
+
+/* Brass, to sit with the board's gold rather than fight it. */
+.molanisk-bell-body {
+    fill: #e3b44a;
+    stroke: #6f4d12;
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+.molanisk-bell-handle {
+    fill: #a8791f;
+    stroke: #5b3f0e;
+    stroke-width: 2;
+}
+
+.molanisk-bell-rim,
+.molanisk-bell-clapper {
+    fill: #c9922c;
+    stroke: #5b3f0e;
+    stroke-width: 2;
+}
+
+.molanisk-bell-shine {
+    fill: none;
+    stroke: #fff2c0;
+    stroke-width: 3;
+    stroke-linecap: round;
+    opacity: 0.75;
+}
+
+/* The ring travelling outwards on each swing. */
+.molanisk-ring {
+    fill: none;
+    stroke: #ffe9a8;
+    stroke-width: 2;
+}

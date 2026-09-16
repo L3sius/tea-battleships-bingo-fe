@@ -103,8 +103,8 @@ const showTestShips = ref(false)
 // seed-derived pick. Temporarily replaces the old show-test-ships toggle
 // in this same corner — that ref/prop is still wired up, just not exposed
 // in the UI right now.
-const attackStyleOptions = [null, 'cannon', 'nuke', 'laser', 'kraken', 'storm', 'snake', 'seamen'] as const
-const forceAttackType = ref<'cannon' | 'nuke' | 'laser' | 'kraken' | 'storm' | 'snake' | 'seamen' | null>(null)
+const attackStyleOptions = [null, 'cannon', 'nuke', 'laser', 'kraken', 'storm', 'snake', 'seamen', 'molanisk'] as const
+const forceAttackType = ref<'cannon' | 'nuke' | 'laser' | 'kraken' | 'storm' | 'snake' | 'seamen' | 'molanisk' | null>(null)
 
 // The board you're viewing is remembered across refreshes.
 const STORED_TEAM_KEY = 'bb:selected-team'
