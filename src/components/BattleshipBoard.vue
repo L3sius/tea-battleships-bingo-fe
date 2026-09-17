@@ -280,11 +280,15 @@ function onShipImgError(name: string | null) {
 // enemy's own view — it is deliberately not drawn here.)
 const sunkShips = computed(() => {
     if (props.teamId === null || !props.enemyFleet?.length) return []
-    const myDamage = props.shots
-        .filter((s) => s.attackerTeamId === props.teamId && s.result !== 'miss')
+    const mine = props.shots.filter((s) => s.attackerTeamId === props.teamId)
+    const myDamage = mine
+        .filter((s) => s.result !== 'miss')
         .map((s) => ({ coord: s.coord, sunkShipKey: s.sunkShipKey }))
+    // Our misses are what let the solver tell empty water from unexplored water,
+    // so it can reject hull placements that strand a hit on a dead cell.
+    const missed = new Set(mine.filter((s) => s.result === 'miss').map((s) => s.coord))
     const hidden = new Set([...pendingReveal.value, ...inFlightCoords.value])
-    return reconstructSunkShips(myDamage, props.enemyFleet, gridSize.value, hidden).map((ship) => ({
+    return reconstructSunkShips(myDamage, props.enemyFleet, gridSize.value, hidden, missed).map((ship) => ({
         ...ship,
         image: ship.image && !failedShipImages.value.has(ship.image) ? ship.image : null,
     }))

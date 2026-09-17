@@ -65,13 +65,57 @@ function candidateRuns(coord: string, length: number, damaged: Set<string>, boar
     return runs
 }
 
-/** Depth-first assignment; anchors are pre-sorted fewest-options-first. */
-function solve(anchors: Anchor[], index: number, taken: Set<string>): string[][] | null {
-    if (index === anchors.length) return []
+/**
+ * Could a hull that is still afloat sit on `coord`? It needs a straight run of
+ * its length made of cells that are on the board, have not been missed, and
+ * aren't part of a hull we've already placed. Hulls of length 1 are excluded by
+ * the caller: a hit on one sinks it, so an afloat one can never hold damage.
+ */
+function fitsAnAfloatHull(
+    coord: string,
+    lengths: number[],
+    taken: Set<string>,
+    missed: Set<string>,
+    boardSize: number,
+): boolean {
+    const { row, col } = parseCoord(coord)
+    for (const length of lengths) {
+        for (const [dr, dc] of [
+            [1, 0],
+            [0, 1],
+        ] as const) {
+            for (let offset = 0; offset < length; offset++) {
+                const startRow = row - dr * offset
+                const startCol = col - dc * offset
+                if (startRow < 0 || startCol < 0) continue
+                if (startRow + dr * (length - 1) >= boardSize || startCol + dc * (length - 1) >= boardSize) continue
+                let fits = true
+                for (let i = 0; i < length && fits; i++) {
+                    const cell = formatCoord(startRow + dr * i, startCol + dc * i)
+                    fits = !missed.has(cell) && !taken.has(cell)
+                }
+                if (fits) return true
+            }
+        }
+    }
+    return false
+}
+
+/**
+ * Depth-first assignment; anchors are pre-sorted fewest-options-first.
+ * `accept` gets the final say on a complete layout.
+ */
+function solve(
+    anchors: Anchor[],
+    index: number,
+    taken: Set<string>,
+    accept: (taken: Set<string>) => boolean,
+): string[][] | null {
+    if (index === anchors.length) return accept(taken) ? [] : null
     for (const run of anchors[index]!.runs) {
         if (run.some((c) => taken.has(c))) continue
         for (const c of run) taken.add(c)
-        const rest = solve(anchors, index + 1, taken)
+        const rest = solve(anchors, index + 1, taken, accept)
         for (const c of run) taken.delete(c)
         if (rest) return [run, ...rest]
     }
@@ -88,6 +132,7 @@ export function reconstructSunkShips(
     fleet: ShipStatusShip[],
     boardSize: number,
     excludeCoords?: Set<string>,
+    missedCoords?: Set<string>,
 ): SunkShipPlacement[] {
     const damaged = new Set(damage.map((d) => d.coord))
     if (!damaged.size) return []
@@ -113,7 +158,23 @@ export function reconstructSunkShips(
     // that immediately rule out options for its neighbours.
     anchors.sort((a, b) => a.runs.length - b.runs.length)
 
-    const assigned = solve(anchors, 0, new Set())
+    // Fitting the sunk hulls onto damaged cells isn't enough to pin them down:
+    // where an anchor's length fits two runs, run order alone decides, and the
+    // hits the loser leaves behind can land on cells no surviving hull could
+    // occupy. So prefer a layout whose leftover damage is still explainable.
+    const afloatLengths = [...new Set(fleet.filter((s) => !s.sunk && s.length > 1).map((s) => s.length))]
+    const leftoverIsPlausible = (taken: Set<string>) => {
+        if (!missedCoords || !afloatLengths.length) return true
+        for (const coord of damaged) {
+            if (taken.has(coord)) continue
+            if (!fitsAnAfloatHull(coord, afloatLengths, taken, missedCoords, boardSize)) return false
+        }
+        return true
+    }
+
+    // Fall back to the old best-effort layout rather than drawing nothing, in
+    // case the damage can't satisfy that (a hull placed by hand, say).
+    const assigned = solve(anchors, 0, new Set(), leftoverIsPlausible) ?? solve(anchors, 0, new Set(), () => true)
     if (!assigned) return []
 
     return anchors.map((anchor, i) => {
