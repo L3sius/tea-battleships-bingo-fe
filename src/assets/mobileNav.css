@@ -2,7 +2,9 @@
     display: none;
 }
 
-@media (max-width: 860px) {
+/* Matches the stacked layout in homeView.css: once the page is one column,
+   the nav row can't fit the links beside the controls, so they move down here. */
+@media (max-width: 1180px) {
     .mobile-nav {
         display: flex;
         position: fixed;

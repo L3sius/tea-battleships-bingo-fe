@@ -113,6 +113,22 @@
     transform: scaleX(1);
 }
 
+/* Once the page stacks (homeView.css), the nav row is too tight for the links
+   AND the counters — the links were clipping mid-word — so the counters go. */
+@media (max-width: 1180px) {
+    .top-nav-stats {
+        display: none;
+    }
+}
+
+/* The bottom tab bar (mobileNav.css) takes over the same links at this width,
+   so these would only duplicate it — and they were clipping mid-word. */
+@media (max-width: 1180px) {
+    .top-nav-links {
+        display: none;
+    }
+}
+
 @media (max-width: 640px) {
     .top-nav {
         grid-template-columns: auto 1fr auto;

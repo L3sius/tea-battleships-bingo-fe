@@ -21,7 +21,14 @@
        columns split whatever is left. The side *content* is then capped and
        centred (see .layout-left / .layout-right) so a very wide window doesn't
        leave a dead gutter beside Live Feed / Fleets. */
-    grid-template-columns: minmax(0, 1fr) minmax(0, calc(100vh - 146px)) minmax(0, 1fr);
+    /* The board's ideal width comes from the viewport HEIGHT, so on a tall,
+       narrow window (half a big monitor) it would eat the whole row and leave
+       the side panels at 0. Cap it so the sides always keep --side-min each. */
+    --side-min: 280px;
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, min(calc(100vh - 146px), calc(100% - 2 * var(--side-min) - 56px)))
+        minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
     align-items: stretch;
     gap: 28px;
@@ -239,7 +246,7 @@
     color: var(--color-bg);
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1180px) {
     .home-container {
         height: auto;
         min-height: 100vh;
