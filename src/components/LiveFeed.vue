@@ -245,10 +245,23 @@ function capitalize(s: string): string {
     return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+// Built once: `toLocaleTimeString` with options constructs a fresh Intl
+// formatter on every call, and this runs for every row on every re-render.
+const TIME_FORMAT = new Intl.DateTimeFormat([], { hour: '2-digit', minute: '2-digit' })
+// Timestamps repeat across rows and never change, so remember what we've formatted.
+const timeCache = new Map<string, string>()
+
 function formatTime(ts: string): string {
+    const hit = timeCache.get(ts)
+    if (hit !== undefined) return hit
     let d = new Date(ts)
     if (Number.isNaN(d.getTime())) d = new Date(ts.replace(' ', 'T') + 'Z')
-    return Number.isNaN(d.getTime()) ? ts : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const out = Number.isNaN(d.getTime()) ? ts : TIME_FORMAT.format(d)
+    // The feed is capped (MAX_LIVE_MESSAGES), so this can't grow without bound,
+    // but keep a ceiling anyway in case a window is left open for days.
+    if (timeCache.size > 4000) timeCache.clear()
+    timeCache.set(ts, out)
+    return out
 }
 
 function popOut() {

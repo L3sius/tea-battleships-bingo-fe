@@ -208,11 +208,27 @@ function toActionMessage(raw: Record<string, unknown>): ActionMessage {
 // Always prepend, for both the history backlog (streamed oldest-first) and live
 // frames — so liveMessages stays strictly newest-first and same-second events
 // keep their arrival order. The stale tail is trimmed off the end.
+// The backlog arrives as several hundred separate SSE frames. Applying each one
+// on its own re-renders the whole feed once per message over a growing list —
+// seconds of blocked main thread on a phone — so collect and flush in batches.
+// The delay is short enough that a live line still lands effectively instantly.
+const FLUSH_MS = 50
+let pendingMessages: ActionMessage[] = []
+let flushTimer: ReturnType<typeof setTimeout> | undefined
+
+function flushLiveMessages() {
+    flushTimer = undefined
+    if (!pendingMessages.length) return
+    // Arrival order is oldest-first within a batch; reversing keeps the feed
+    // strictly newest-first, exactly as one-at-a-time unshifting did.
+    const batch = pendingMessages.reverse()
+    pendingMessages = []
+    liveMessages.value = [...batch, ...liveMessages.value].slice(0, MAX_LIVE_MESSAGES)
+}
+
 function pushLiveMessage(message: ActionMessage) {
-    liveMessages.value.unshift(message)
-    if (liveMessages.value.length > MAX_LIVE_MESSAGES) {
-        liveMessages.value.length = MAX_LIVE_MESSAGES
-    }
+    pendingMessages.push(message)
+    if (flushTimer === undefined) flushTimer = setTimeout(flushLiveMessages, FLUSH_MS)
 }
 
 function start() {

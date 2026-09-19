@@ -267,7 +267,8 @@ function outgoingSymbol(coord: string) {
 const failedShipImages = ref<Set<string>>(new Set())
 
 function shipImageSrc(name: string): string {
-    return /^(https?:)?\//.test(name) ? name : `/images/ships/${name}`
+    // See TeamShipStatus.hullSrc: the shipped art is WebP, the backend says .png.
+    return /^(https?:)?\//.test(name) ? name : `/images/ships/${name.replace(/\.png$/i, '.webp')}`
 }
 
 function onShipImgError(name: string | null) {

@@ -86,7 +86,9 @@ const attackingTeams = computed(() => new Set((props.pendingAttacks ?? []).map((
 const emit = defineEmits<{ 'update:selectedTeamId': [teamId: number] }>()
 
 function hullSrc(image: string) {
-    return /^(https?:)?\//.test(image) ? image : `/images/ships/${image}`
+    // The backend names the art `<hull>.png`; we ship a WebP re-encode of it
+    // (same pixels, ~9x smaller), so swap the extension on the way out.
+    return /^(https?:)?\//.test(image) ? image : `/images/ships/${image.replace(/\.png$/i, '.webp')}`
 }
 
 function afloatCount(team: ShipStatusTeam) {

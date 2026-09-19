@@ -3,7 +3,7 @@
 
     <div v-if="phase === 'rising' || phase === 'receding'" class="kraken-tentacle"
         :class="{ receding: phase === 'receding' }" :style="tentacleAnchorStyle">
-        <img src="/images/kraken.png" class="kraken-sprite" alt="" />
+        <img src="/images/kraken.webp" class="kraken-sprite" alt="" />
     </div>
 
     <AttackImpact v-if="burst && targetPos" :x="targetPos.x" :y="targetPos.y" :result="burst"

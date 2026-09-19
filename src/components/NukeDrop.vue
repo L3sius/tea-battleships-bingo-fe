@@ -4,7 +4,7 @@
     <div v-if="countdown !== null" :key="countdown" class="nuke-countdown">{{ countdown }}</div>
 
     <div v-if="!burst && countdown === null" ref="bombRef" class="nuke-bomb" :style="bombAnchorStyle">
-        <img src="/images/nuke.png" class="nuke-sprite" alt="" />
+        <img src="/images/nuke.webp" class="nuke-sprite" alt="" />
     </div>
 
     <div v-if="burst" class="nuke-boom" :class="[burst, { fading: fadingOut }]" :style="anchorStyle">
