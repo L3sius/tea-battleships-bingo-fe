@@ -65,40 +65,87 @@ function candidateRuns(coord: string, length: number, damaged: Set<string>, boar
     return runs
 }
 
-/**
- * Could a hull that is still afloat sit on `coord`? It needs a straight run of
- * its length made of cells that are on the board, have not been missed, and
- * aren't part of a hull we've already placed. Hulls of length 1 are excluded by
- * the caller: a hit on one sinks it, so an afloat one can never hold damage.
- */
-function fitsAnAfloatHull(
+/** Every straight run of `length` cells through `coord` that could hold a hull:
+ *  on the board, not somewhere we missed, and clear of hulls already placed. */
+function runsThrough(
     coord: string,
-    lengths: number[],
-    taken: Set<string>,
+    length: number,
     missed: Set<string>,
+    blocked: Set<string>,
     boardSize: number,
-): boolean {
+): string[][] {
     const { row, col } = parseCoord(coord)
-    for (const length of lengths) {
-        for (const [dr, dc] of [
-            [1, 0],
-            [0, 1],
-        ] as const) {
-            for (let offset = 0; offset < length; offset++) {
-                const startRow = row - dr * offset
-                const startCol = col - dc * offset
-                if (startRow < 0 || startCol < 0) continue
-                if (startRow + dr * (length - 1) >= boardSize || startCol + dc * (length - 1) >= boardSize) continue
-                let fits = true
-                for (let i = 0; i < length && fits; i++) {
-                    const cell = formatCoord(startRow + dr * i, startCol + dc * i)
-                    fits = !missed.has(cell) && !taken.has(cell)
-                }
-                if (fits) return true
+    const out: string[][] = []
+    for (const [dr, dc] of [
+        [1, 0],
+        [0, 1],
+    ] as const) {
+        if (length === 1 && dc === 1) continue
+        for (let offset = 0; offset < length; offset++) {
+            const startRow = row - dr * offset
+            const startCol = col - dc * offset
+            if (startRow < 0 || startCol < 0) continue
+            if (startRow + dr * (length - 1) >= boardSize || startCol + dc * (length - 1) >= boardSize) continue
+            const cells: string[] = []
+            let fits = true
+            for (let i = 0; i < length && fits; i++) {
+                const cell = formatCoord(startRow + dr * i, startCol + dc * i)
+                if (missed.has(cell) || blocked.has(cell)) fits = false
+                else cells.push(cell)
             }
+            if (fits) out.push(cells)
         }
     }
-    return false
+    return out
+}
+
+/** Backtracking is cheap here, but cap it so a pathological board can't stall a render. */
+const COVER_BUDGET = 6000
+
+/**
+ * Every hit not covered by a wreck belongs to a hull that's still out there,
+ * and those hulls have to fit *together*: one hull per leftover, never
+ * overlapping, never on water we've missed. Checking each leftover on its own
+ * isn't enough — two layouts can both look fine hit-by-hit while only one
+ * leaves room for the survivors, which is how a wreck ends up a cell off.
+ */
+function leftoversFitSpareHulls(
+    orphans: string[],
+    spareLengths: number[],
+    missed: Set<string>,
+    blocked: Set<string>,
+    boardSize: number,
+): boolean {
+    let steps = 0
+    const covered = new Set<string>()
+    const usedHull = new Set<number>()
+
+    const rec = (): boolean => {
+        // Out of budget: accept rather than throw away a layout on a hunch.
+        if (++steps > COVER_BUDGET) return true
+        const next = orphans.find((o) => !covered.has(o))
+        if (next === undefined) return true
+        for (let i = 0; i < spareLengths.length; i++) {
+            if (usedHull.has(i)) continue
+            for (const run of runsThrough(next, spareLengths[i]!, missed, blocked, boardSize)) {
+                if (run.some((c) => covered.has(c))) continue
+                usedHull.add(i)
+                for (const c of run) {
+                    covered.add(c)
+                    blocked.add(c)
+                }
+                const ok = rec()
+                usedHull.delete(i)
+                for (const c of run) {
+                    covered.delete(c)
+                    blocked.delete(c)
+                }
+                if (ok) return true
+            }
+        }
+        return false
+    }
+    return rec()
 }
 
 /**
@@ -162,14 +209,16 @@ export function reconstructSunkShips(
     // where an anchor's length fits two runs, run order alone decides, and the
     // hits the loser leaves behind can land on cells no surviving hull could
     // occupy. So prefer a layout whose leftover damage is still explainable.
-    const afloatLengths = [...new Set(fleet.filter((s) => !s.sunk && s.length > 1).map((s) => s.length))]
+    // Hulls we are NOT drawing as wrecks are the ones still out there; a leftover
+    // hit must belong to one of them. (Length 1 can't hold a leftover: a hit on a
+    // one-cell hull sinks it, and a sunk one would be drawn.)
+    const placing = new Set(anchors.map((a) => a.key))
+    const spareLengths = fleet.filter((s) => s.length > 1 && !placing.has(s.key)).map((s) => s.length)
     const leftoverIsPlausible = (taken: Set<string>) => {
-        if (!missedCoords || !afloatLengths.length) return true
-        for (const coord of damaged) {
-            if (taken.has(coord)) continue
-            if (!fitsAnAfloatHull(coord, afloatLengths, taken, missedCoords, boardSize)) return false
-        }
-        return true
+        if (!missedCoords || !spareLengths.length) return true
+        const orphans = [...damaged].filter((c) => !taken.has(c))
+        if (!orphans.length) return true
+        return leftoversFitSpareHulls(orphans, spareLengths, missedCoords, new Set(taken), boardSize)
     }
 
     // Fall back to the old best-effort layout rather than drawing nothing, in
